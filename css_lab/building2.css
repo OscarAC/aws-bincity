@@ -1,0 +1,154 @@
+.building {
+  position: absolute;
+  display: block;
+  background-color: #fae1cb;  
+  width: 50%;
+  height: 50%;
+  top:0;
+  left:0;
+  border-top: 1px solid blue;
+  border-left: 1px solid red;
+  content: '';
+
+  transform: rotateZ(-135deg);
+}
+
+.floor .wall-one {
+  position: absolute;
+  display: block;  
+  background-color: #cb7a4d;
+
+  width: 50px;
+  height: 15px;
+
+  transform: skewX(45deg);
+
+  top:  0px;
+  left: 7px;
+}
+
+.wall-one div{
+  position: absolute;
+  display: block;
+  background-color: black;
+  opacity: 0.35;
+  width: 5px;
+  height: 7px;
+  top: 3px;
+  left: 8px;
+  
+  box-shadow: 10px 0px 0 0 black,
+              20px 0px 0 0 black,
+              30px 0px 0 0 black;
+}
+
+.floor .wall-two {
+  position: absolute;
+  display: block;  
+  background-color: #b76538;
+  
+  width: 15px;
+  height: 50px;
+
+  transform: skewY(45deg);
+  top:  7px;
+  left: 0px;
+}
+
+.wall-two div{
+  position: absolute;
+  display: block;
+  background-color: black;
+  opacity: 0.35;
+  width: 7px;
+  height: 5px;
+  top: 8px;
+  left: 3px;
+  
+  box-shadow: 0px 10px 0 0 black,
+              0px 20px 0 0 black,
+              0px 30px 0 0 black;
+             
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+.floor2 .wall-one {
+  position: absolute;
+  display: block;  
+  background-color: #cb7a4d;
+
+  width: 50px;
+  height: 15px;
+
+  transform: skewX(45deg);
+
+  top:  14px;
+  left: 21px;
+}
+
+.wall-one div{
+  position: absolute;
+  display: block;
+  background-color: black;
+  opacity: 0.35;
+  width: 5px;
+  height: 7px;
+  top: 3px;
+  left: 8px;
+  
+  box-shadow: 10px 0px 0 0 black,
+              20px 0px 0 0 black,
+              30px 0px 0 0 black;
+}
+
+.floor2 .wall-two {
+  position: absolute;
+  display: block;  
+  background-color: #b76538;
+  
+  width: 15px;
+  height: 50px;
+
+  transform: skewY(45deg);
+  top:  7px;
+  left: 0px;
+}
+
+.wall-two div{
+  position: absolute;
+  display: block;
+  background-color: black;
+  opacity: 0.35;
+  width: 7px;
+  height: 5px;
+  top: 8px;
+  left: 3px;
+  
+  box-shadow: 0px 10px 0 0 black,
+              0px 20px 0 0 black,
+              0px 30px 0 0 black;
+             
+}

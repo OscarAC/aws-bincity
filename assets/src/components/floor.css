@@ -1,0 +1,47 @@
+.floor .wall-one {
+    position: absolute;
+    display: block;
+    background-color: #cb7a4d; 
+    width:50px;
+    height: 15px;
+    transform: skewX(45deg);
+}
+
+.wall-one div {
+    position: absolute;
+    display: block;    
+    opacity: 0.35;
+    width: 5px;
+    height: 7px;
+    top: 0;
+    left: 0;
+    box-shadow: 10px 0px 0 0 rgb(0, 255, 179), 20px 0px 0 0 black, 30px 0px 0 0 black, 40px 0px 0 0 black;
+}
+
+.floor .wall-two {
+    position: absolute;
+    display: block;
+    background-color:#b76538;
+    width:15px;
+    height: 50px;
+    transform: skewY(45deg);    
+}
+
+.floor .wall-two:hover{
+    cursor: pointer;
+}
+
+.wall-two div {
+    position: absolute;
+    display: block;    
+    opacity: 0.35;
+    width: 7px;
+    height: 5px;
+    top: 0px;
+    left: 0px;
+    box-shadow: 0px 10px 0 0 black, 0px 20px 0 0 black, 0px 30px 0 0 black, 0px 40px 0 0 black;
+}
+
+.floor .wall-one:hover{
+    cursor: pointer;
+}

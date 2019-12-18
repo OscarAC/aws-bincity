@@ -1,0 +1,17 @@
+
+.control {
+    width: 500px;
+    height: 50px;    
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-radius: 8px;
+    scrollbar-color: #b76538 white;
+    z-index: 100;
+}
+
+.control section {    
+    height: 49px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
