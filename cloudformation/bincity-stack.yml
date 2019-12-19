@@ -8,6 +8,10 @@ Parameters:
     Default: bincity
     AllowedPattern: "^[a-z]{1,12}"
     ConstraintDescription: The ProjectName can by up to 12 characters, lowercase letters (a-z) only.
+  RepositoryUrl:
+    Description: Clone URL of the repository in GitHub. Example (https://github.com/oscarac/aws-bincity)
+    Type: String
+    Default: https://github.com/OscarAC/aws-bincity        
 
 Conditions:
   IADRegion: !Equals [!Ref "AWS::Region", "us-east-1"]
@@ -15,20 +19,9 @@ Conditions:
 Mappings:
   Constants:
     S3Keys:
-      ListBuildingsCode: functions/ListBuildings.zip
-      UpdateBuildingCode: functions/UpdateBuilding.zip
-  S3Buckets:
-    us-east-1:
-      Bucket: bincity-template
-    us-east-2:
-      Bucket: bincity-template   
-    us-west-2:
-      Bucket: bincity-template-us-west-2      
-    eu-central-1:
-      Bucket: bincity-template-eu-central-1      
-    eu-west-1:
-      Bucket: bincity-template-eu-west-1      
-
+      ListBuildingsCode: ListBuildingsCode-1.0-SNAPSHOT.jar
+      UpdateBuildingCode: UpdateBuilding-1.0-SNAPSHOT.jar
+    
 Resources:
   DynamoDbRole:
     Type: AWS::IAM::Role
@@ -43,9 +36,9 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExcutionRole'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       Policies:        
-        - PolicyName: BinCityPolicy
+        - PolicyName: !Sub '${ProjectName}-dynamodb-policy'
           PolicyDocument:
            Version: "2012-10-17"
            Statement:
@@ -58,21 +51,21 @@ Resources:
                   - 'dynamodb:UpdateItem'
                   - 'dynamodb:DeleteItem'
                 Resource: !GetAtt TBinCity.Arn
+  
   TBinCity:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: !Ref ProjectName
       AttributeDefinitions:
         - AttributeName: buildingId
-          AttributeType: String
-        - AttributeName: floors
-          AttributeType: Array     
+          AttributeType: S        
       KeySchema:
         - AttributeName: buildingId
           KeyType: HASH
       ProvisionedThroughput:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
+
 
   FunctionListBuildings:
     Type: AWS::Lambda::Function
@@ -84,15 +77,12 @@ Resources:
       Role: !GetAtt
         - DynamoDbRole
         - Arn
-      Timeout: 120      
+      Timeout: 120
       Environment:
         Variables:
           TABLE_NAME: !Ref ProjectName
       Code:
-        S3Bucket: !FindInMap
-          - S3Buckets
-          - !Ref 'AWS::Region'
-          - Bucket
+        S3Bucket: !Ref LambdaBucket
         S3Key: !FindInMap
           - Constants
           - S3Keys
@@ -129,10 +119,7 @@ Resources:
         Variables:
           TABLE_NAME: !Ref ProjectName
       Code:
-        S3Bucket: !FindInMap
-          - S3Buckets
-          - !Ref 'AWS::Region'
-          - Bucket
+        S3Bucket: !Ref LambdaBucket
         S3Key: !FindInMap
           - Constants
           - S3Keys
@@ -435,11 +422,12 @@ Resources:
           - CognitoUnAuthorizedRole
           - Arn
 
-  AssetsCodeRepository:
-    Type: 'AWS::CodeCommit::Repository'
+  LambdaBucket:
+    Type: 'AWS::S3::Bucket'
     Properties:
-      RepositoryDescription: Code repository for web application
-      RepositoryName: !Sub '${ProjectName}-WebAssets'
+      AccessControl: Private
+      MetricsConfigurations:
+        - Id: EntireBucket      
 
   AssetsBucket:
     Type: 'AWS::S3::Bucket'
@@ -449,7 +437,7 @@ Resources:
         - Id: EntireBucket
       WebsiteConfiguration:
         IndexDocument: index.html
-
+  
   AssetsBucketPolicy:
     Type: 'AWS::S3::BucketPolicy'
     Properties:
@@ -509,7 +497,7 @@ Resources:
                 - codebuild.amazonaws.com
             Action: 'sts:AssumeRole'
       Policies:
-        - PolicyName: codebuild-policy
+        - PolicyName: !Sub '${ProjectName}-codebuild-assets-policy'
           PolicyDocument:
             Statement:
               - Action:
@@ -521,12 +509,8 @@ Resources:
                   - !Join 
                     - ''
                     - - !GetAtt AssetsBucket.Arn
-                      - /*
-                  - !Join 
-                    - ''
-                    - - !GetAtt PipelineArtifactsBucket.Arn
-                      - /*
-                Effect: Allow
+                      - /*                  
+                Effect: Allow        
         - PolicyName: codebuild-logs
           PolicyDocument:
             Statement:
@@ -539,6 +523,88 @@ Resources:
                 Effect: Allow
       Path: /
 
+  AssetsBuildProject:    
+    Description: Creating AWS CodeBuild project
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Description: !Sub 'Building stage for ${ProjectName}.'
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL        
+        Image: 'aws/codebuild/standard:2.0'
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: S3_BUCKET
+            Value: !Ref PipelineArtifactsBucket
+      Name: !Sub '${ProjectName}--assets-build'
+      ServiceRole: !Ref CodeBuildRole
+      Source:
+        Type: CODEPIPELINE        
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                nodejs: 10
+            pre_build:
+              commands:                
+                - echo Installing NPM dependencies...
+                - cd assets
+                - npm install fibers node-sass sass redux typescript redux-thunk react-redux --save
+                - npm install
+            build:
+              commands:
+                - npm run build
+            post_build:
+              commands:
+                - echo Uploading to AssetsBucket 
+                - aws s3 cp --recursive ./build s3://${AssetsBucket}/
+                - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/service-worker.js s3://${AssetsBucket}/
+                - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/index.html s3://${AssetsBucket}/
+                - aws cloudfront create-invalidation --distribution-id ${AssetsCDN} --paths /index.html /service-worker.js
+      TimeoutInMinutes: 5
+
+  LambdaBuildProject:
+    Description: Creating AWS CodeBuild project
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Artifacts:
+        Type: CODEPIPELINE
+      Description: !Sub 'Building stage for ${ProjectName}.'
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL        
+        Image: 'aws/codebuild/standard:2.0'
+        Type: LINUX_CONTAINER
+      Name: !Sub '${ProjectName}-build'
+      ServiceRole: !Ref CodeBuildRole
+      Source:        
+        Type: CODEPIPELINE
+        BuildSpec: !Sub |
+          version: 0.2
+          phases:
+            install:
+              runtime-versions:
+                java: 8
+            pre_build:
+              commands:                
+                - echo Installing Lambda Functions...
+                - cd functions              
+            build:
+              commands:
+                - mvn package shade:shade
+            post_build:
+              commands:
+                - echo Uploading to LambdaBucket 
+                - aws s3 cp --recursive ./ListBuildings/target/ListBuildings-1.0-SNAPSHOT.jar s3://${LambdaBucket}
+                - aws s3 cp --recursive ./UpdateBuilding/target/UpdateBuilding-1.0-SNAPSHOT.jar s3://${LambdaBucket}      
+      TimeoutInMinutes: 5
+
+  PipelineArtifactsBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+
   CodePipelineRole:
     Description: Creating service role in IAM for AWS CodePipeline
     Type: 'AWS::IAM::Role'
@@ -550,18 +616,7 @@ Resources:
               Service:
                 - codepipeline.amazonaws.com
             Action: 'sts:AssumeRole'
-      Policies:
-        - PolicyName: codecommit-for-codepipeline
-          PolicyDocument:
-            Statement:
-              - Action:
-                  - 'codecommit:GetBranch'
-                  - 'codecommit:GetCommit'
-                  - 'codecommit:UploadArchive'
-                  - 'codecommit:GetUploadArchiveStatus'
-                  - 'codecommit:CancelUploadArchive'
-                Resource: !GetAtt AssetsCodeRepository.Arn
-                Effect: Allow
+      Policies:        
         - PolicyName: artifacts-for-pipeline
           PolicyDocument:
             Statement:
@@ -588,62 +643,7 @@ Resources:
                 Effect: Allow
       Path: /
 
-  PipelineArtifactsBucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      AccessControl: Private
-  
-  CodeBuildProject:
-    DependsOn:
-      - PipelineArtifactsBucket
-    Description: Creating AWS CodeBuild project
-    Type: 'AWS::CodeBuild::Project'
-    Properties:
-      Artifacts:
-        Type: CODEPIPELINE
-      Description: !Sub 'Building stage for ${ProjectName}.'
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
-        EnvironmentVariables:
-          - Name: S3_BUCKET
-            Value: !Ref PipelineArtifactsBucket
-        Image: 'aws/codebuild/standard:2.0'
-        Type: LINUX_CONTAINER
-      Name: !Sub '${ProjectName}-build'
-      ServiceRole: !Ref CodeBuildRole
-      Source:
-        Type: CODEPIPELINE
-        BuildSpec: !Sub |
-          version: 0.2
-          phases:
-            install:
-              runtime-versions:
-                nodejs: 8
-            pre_build:
-              commands:
-                - echo Installing NPM dependencies...
-                - npm install
-            build:
-              commands:
-                - npm run build
-            post_build:
-              commands:
-                - echo Uploading to AssetsBucket 
-                - aws s3 cp --recursive ./build s3://${AssetsBucket}/ 
-                - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/service-worker.js s3://${AssetsBucket}/
-                - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/index.html s3://${AssetsBucket}/
-                - aws cloudfront create-invalidation --distribution-id ${AssetsCDN} --paths /index.html /service-worker.js
-
-          artifacts:
-            files:
-              - '**/*'
-            base-directory: build        
-      Tags:
-        - Key: app-name
-          Value: !Ref ProjectName
-      TimeoutInMinutes: 5
-
-  AssetsCodePipeline:
+  ProjectCodePipeline:
     Type: 'AWS::CodePipeline::Pipeline'
     Properties:
       Name: !Sub '${ProjectName}-Assets-Pipeline'
@@ -685,15 +685,8 @@ Resources:
               RunOrder: 1   
     DependsOn:
       - PipelineArtifactsBucket
- 
+
 Outputs:
-
-  CodeRepository:
-    Description: Code repository for the web application.
-    Export:
-      Name: !Sub '${ProjectName}CodeRepository'
-    Value: !GetAtt AssetsCodeRepository.Name
-
   WebApplication:
     Description: The URL for the web application
     Export:
