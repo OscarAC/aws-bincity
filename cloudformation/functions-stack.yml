@@ -1,0 +1,236 @@
+AWSTemplateFormatVersion: 2010-09-09
+parameters:
+
+  ProjectName:
+    Description: Used as a prefix for project resources. Can be up to 12 characters, lowercase letters (a-z) only.
+    Type: String
+    Default: bincity
+    AllowedPattern: "^[a-z]{1,12}"
+    ConstraintDescription: The ProjectName can by up to 12 characters, lowercase letters (a-z) only.
+  LambdaHandlerPackage:
+    Desctiption: Lambda functions package name
+    Type: String
+    Default: com.techadit.lambda
+  DynamoDbRole:
+    Description: Name of the DynamoDB Role to be used by the lambda functions
+    Type: String
+  LambdaBucket:
+    Description: Name of the Bucket where the artifacts are stored
+    Type: String
+
+Mappings:
+  Constants:
+    S3Keys:
+      ListBuildingsCode: ListBuildingsCode-1.0-SNAPSHOT.jar
+      UpdateBuildingCode: UpdateBuilding-1.0-SNAPSHOT.jar
+
+Resources:
+
+  FunctionListBuildings:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Get list of buildings
+      FunctionName: !Sub '${ProjectName}-ListBuildings'
+      MemorySize: 128
+      Runtime: java8
+      Handler: !Join ['', [!Ref 'LambdaHandlerPackage', ., 'FnListBuildings::handleRequest']]
+      Role: !Ref DynamoDbRole
+      Timeout: 120
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ProjectName
+      Code:
+        S3Bucket: !Ref LambdaBucket
+        S3Key: !FindInMap
+          - Constants
+          - S3Keys
+          - ListBuildingsCode    
+  
+  FunctionListBuildingsPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionListBuildings
+      Principal: apigateway.amazonaws.com      
+      SourceArn: !Join
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+
+  FunctionUpdateBuilding:
+    Type: AWS::Lambda::Function
+    Properties:
+      Description: Update a building
+      FunctionName: !Sub '${ProjectName}-UpdateBuilding'
+      MemorySize: 128
+      Runtime: java8           
+      Handler: !Join ['', [!Ref 'LambdaHandlerPackage', ., 'FnUpdateBuilding::handleRequest']]    
+      Role: !Ref DynamoDbRole
+      Timeout: 120      
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref ProjectName
+      Code:
+        S3Bucket: !Ref LambdaBucket
+        S3Key: !FindInMap
+          - Constants
+          - S3Keys
+          - UpdateBuildingCode    
+  
+  FunctionUpdateBuildingPermissions:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref FunctionUpdateBuilding
+      Principal: apigateway.amazonaws.com      
+      SourceArn: !Join
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+
+  AppApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: !Ref ProjectName
+      Description: API used for BinCity requests
+      FailOnWarnings: true
+
+  BuildingsApiRequestGET:
+    DependsOn:
+      - FunctionListBuildingsPermissions
+    Type: 'AWS::ApiGateway::Method'     
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: Get
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions'
+            - !GetAtt
+              - FunctionListBuildings
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref BuildingsApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+  
+  BuildingsApiRequestOPTIONS:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ResourceId: !Ref BuildingsApiResource
+      RestApiId: !Ref AppApi
+      AuthorizationType: None
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
+
+  BuildingsApiRequestPUT:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: PUT
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions'
+            - !GetAtt
+              - FunctionUpdateBuilding
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.path.id: true
+      ResourceId: !Ref BuildingApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+  
+  BuildingsApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !GetAtt
+        - AppApi
+        - RootResourceId
+      PathPart: buildings
+  
+  BuildingApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !Ref BuildingsApiResource
+      PathPart: '{id}'
+  
+  # ApiAuthorizer:
+  #   Type: 'AWS::ApiGateway::Authorizer'
+  #   Properties:
+  #     AuthorizerResultTtlInSeconds: 300
+  #     IdentitySource: method.request.header.Authorization
+  #     Name: CognitoDefaultUserPoolAuthorizer
+  #     ProviderARNs:
+  #       - !GetAtt
+  #         - UserPool
+  #         - Arn
+  #     RestApiId: !Ref AppApi
+  #     Type: COGNITO_USER_POOLS
+
+  APIDeployment:
+    DependsOn:
+      - BuildingsApiRequestGET
+      - BuildingsApiRequestOPTIONS
+      - BuildingsApiRequestPUT
+    Type: 'AWS::ApiGateway::Deployment'
+    Properties:
+      Description: Dev deployment for API
+      RestApiId: !Ref AppApi
+      StageName: dev
+
+
+    
+
