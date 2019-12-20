@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion : '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+  ListBuildings:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: ListBuildings.handler
+      Runtime: nodejs8.10
+      Events:
+        HelloWorldApi:
+          Type: Api
+          Properties:
+            Path: /
+            Method: GET
+
+  UpdateBuilding:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: UpdateBuilding.handler
+      Runtime: nodejs8.10
+      Events:
+        HelloWorldApi:
+          Type: Api
+          Properties:
+            Path: /
+            Method: PUT

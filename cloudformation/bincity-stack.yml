@@ -29,46 +29,52 @@ Parameters:
     AllowedPattern: "[A-Za-z0-9-]+"
 
 Conditions:
-
   IADRegion: !Equals [!Ref "AWS::Region", "us-east-1"]
-
 
 Resources:
 
-  ###########################################
-  # Roles Definitions
-  ###########################################
+  # DynamoDB Table
+  TBinCity:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TBinCity
+      AttributeDefinitions:
+        - AttributeName: buildingId
+          AttributeType: S        
+      KeySchema:
+        - AttributeName: buildingId
+          KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
 
-  # DynamoDB Role
-  DynamoDbRole:
-    Type: AWS::IAM::Role
-    Properties:      
-      AssumeRolePolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - lambda.amazonaws.com
-            Action:
-              - 'sts:AssumeRole'
-      ManagedPolicyArns:
-        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
-      Policies:        
-        - PolicyName: !Sub '${ProjectName}-dynamodb-policy'
-          PolicyDocument:
-           Version: "2012-10-17"
-           Statement:
-              - Effect: "Allow"
-                Action:
-                  - 'dynamodb:PuItem'
-                  - 'dynamodb:GetItem'
-                  - 'dynamodb:Query'
-                  - 'dynamodb:Scan'
-                  - 'dynamodb:UpdateItem'
-                  - 'dynamodb:DeleteItem'
-                Resource: !GetAtt TBinCity.Arn
-  
+  # Assets S3 Bucket
+  AssetsBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: PublicRead
+      MetricsConfigurations:
+        - Id: AssetsBucket
+      WebsiteConfiguration:
+        IndexDocument: index.html
+
+  # Lambda Functions S3 Bucket
+  LambdaBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      MetricsConfigurations:
+        - Id: LambdaBucket
+
+  # Pipeline Artifacts S3 Bucket
+  PipelineArtifactsBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      VersioningConfiguration:
+        Status: Enabled
+
+
   # CodeBuild Role
   CodeBuildRole:
     Description: Creating service role in IAM for AWS CodeBuild
@@ -116,128 +122,6 @@ Resources:
                 Effect: Allow
       Path: /
 
-  # CloudFormation Role
-  CloudFormationRole:
-    Description: Creating service role in IAM for AWS CloudFormation
-    Type: AWS::IAM::Role
-    Properties:
-      RoleName: !Sub "${ProjectName}-cloudformation-role"
-      AssumeRolePolicyDocument:
-        Statement:
-        - Effect: Allow
-          Principal:
-            Service: [cloudformation.amazonaws.com]
-          Action: sts:AssumeRole
-      Path: /
-
-  # CodePipeline Role
-  CodePipelineRole:
-    Description: Creating service role in IAM for AWS CodePipeline
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - codepipeline.amazonaws.com
-            Action: 'sts:AssumeRole'
-      Policies:        
-        - PolicyName: artifacts-for-pipeline
-          PolicyDocument:
-            Statement:
-              - Action:
-                  - 's3:PutObject'
-                  - 's3:GetObject'
-                Resource:
-                  'Fn::Join':
-                    - ''
-                    - - 'Fn::GetAtt':
-                          - PipelineArtifactsBucket
-                          - Arn
-                      - /*
-                Effect: Allow
-        - PolicyName: codebuild-assets-for-pipeline
-          PolicyDocument:
-            Statement:
-              - Action:
-                  - 'codebuild:BatchGetBuilds'
-                  - 'codebuild:StartBuild'
-                Resource: !GetAtt 
-                  - AssetsBuildProject
-                  - Arn
-                Effect: Allow      
-        - PolicyName: codebuild-lambdas-for-pipeline
-          PolicyDocument:
-            Statement:
-              - Action:
-                  - 'codebuild:BatchGetBuilds'
-                  - 'codebuild:StartBuild'
-                Resource: !GetAtt 
-                  - LambdaBuildProject
-                  - Arn
-                Effect: Allow
-        - PolicyName: codebuild-sam-for-pipeline
-          PolicyDocument:
-            Statement:
-              - Action:
-                  - 'codebuild:BatchGetBuilds'
-                  - 'codebuild:StartBuild'
-                Resource: !GetAtt 
-                  - SAMBuildProject
-                  - Arn
-                Effect: Allow 
-      Path: /
-
-  ###########################################
-  # Resource Definitions
-  ###########################################
-
-  # DynamoDB Table
-  TBinCity:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: TBinCity
-      AttributeDefinitions:
-        - AttributeName: buildingId
-          AttributeType: S        
-      KeySchema:
-        - AttributeName: buildingId
-          KeyType: HASH
-      ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
-
-  # Assets S3 Bucket
-  AssetsBucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      AccessControl: PublicRead
-      MetricsConfigurations:
-        - Id: EntireBucket
-      WebsiteConfiguration:
-        IndexDocument: index.html
-
-  # Lambda Functions S3 Bucket
-  LambdaBucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      AccessControl: Private
-      MetricsConfigurations:
-        - Id: EntireBucket
-
-  # Pipeline Artifacts S3 Bucket
-  PipelineArtifactsBucket:
-    Type: 'AWS::S3::Bucket'
-    Properties:
-      AccessControl: Private
-      VersioningConfiguration:
-        Status: Enabled
-
-  ###########################################
-  # CodeBuild Definitions
-  ###########################################
-
   # Assets CodeBuild Project
   AssetsBuildProject:    
     Description: Creating AWS CodeBuild for Web Assets
@@ -249,10 +133,7 @@ Resources:
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL        
         Image: 'aws/codebuild/standard:2.0'
-        Type: LINUX_CONTAINER
-        EnvironmentVariables:
-          - Name: S3_BUCKET
-            Value: !Ref PipelineArtifactsBucket
+        Type: LINUX_CONTAINER        
       Name: !Sub '${ProjectName}-build-assets'
       ServiceRole: !Ref CodeBuildRole
       Source:
@@ -280,85 +161,114 @@ Resources:
                 - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/index.html s3://${AssetsBucket}/                
       TimeoutInMinutes: 5
 
-
-  # Lambda CodeBuild Project
-  LambdaBuildProject:
-    Description: Creating AWS CodeBuild for Lambdas build
+   # Functions CodeBuild Project
+  LambdasBuildProject:    
+    Description: Creating AWS CodeBuild for Lambda Functions
     Type: 'AWS::CodeBuild::Project'
     Properties:
       Artifacts:
         Type: CODEPIPELINE
-      Description: !Sub 'Building Lambda stage for ${ProjectName}.'
+      Description: !Sub 'Building Lambdas stage for ${ProjectName}.'
       Environment:
         ComputeType: BUILD_GENERAL1_SMALL        
         Image: 'aws/codebuild/standard:2.0'
-        Type: LINUX_CONTAINER
+        Type: LINUX_CONTAINER        
       Name: !Sub '${ProjectName}-build-lambdas'
       ServiceRole: !Ref CodeBuildRole
-      Source:        
-        Type: CODEPIPELINE
+      Source:
+        Type: CODEPIPELINE        
         BuildSpec: !Sub |
           version: 0.2
           phases:
             install:
               runtime-versions:
-                java: openjdk8
-            pre_build:
-              commands:                
-                - echo Installing Lambda Functions...
-                - cd functions              
+                nodejs: 10
             build:
-              commands:
-                - mvn package shade:shade
-            post_build:
-              commands:
-                - echo Uploading to LambdaBucket 
-                - aws s3 cp ./ListBuildings/target/ListBuildings-1.0-SNAPSHOT.jar s3://${LambdaBucket}
-                - aws s3 cp ./UpdateBuilding/target/UpdateBuilding-1.0-SNAPSHOT.jar s3://${LambdaBucket}      
+              commands:                                
+                - cd functions
+                - aws cloudformation package --template-file ./functions-stack.yml --output-template-file outputtemplate.yml --s3-bucket ${LambdaBucket}
+                - aws cloudformation deploy --template-file ./outputtemplate.yml --stack-name ${ProjectName}-Lambdas --capabilities CAPABILITY_IAM            
       TimeoutInMinutes: 5
 
-  # SAM CodeBuild Project
-  SAMBuildProject:
-    Description: Creating AWS CodeBuild for building SAM Especifications
-    Type: 'AWS::CodeBuild::Project'
+  # CloudFormation Role  
+  CloudFormationRole: 
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Statement: 
+          Action: 
+            - "sts:AssumeRole"
+          Effect: Allow
+          Principal: 
+            Service: 
+              - cloudformation.amazonaws.com
+        Version: "2012-10-17"
+      ManagedPolicyArns: 
+        - "arn:aws:iam::aws:policy/AdministratorAccess"
+      Path: /
+    Type: "AWS::IAM::Role"
+
+  # CodePipeline Role
+  CodePipelineRole:
+    Description: Creating service role in IAM for AWS CodePipeline
+    Type: 'AWS::IAM::Role'
     Properties:
-      Artifacts:
-        Type: CODEPIPELINE
-      Description: !Sub 'Building SAM stage for ${ProjectName}.'
-      Environment:
-        ComputeType: BUILD_GENERAL1_SMALL        
-        Image: 'aws/codebuild/standard:2.0'
-        Type: LINUX_CONTAINER
-        EnvironmentVariables:
-          - Name: S3_BUCKET
-            Value: !Ref LambdaBucket
-      Name: !Sub '${ProjectName}-build-sam'
-      ServiceRole: !Ref CodeBuildRole
-      Source:        
-        Type: CODEPIPELINE
-        BuildSpec: !Sub |
-          version: 0.0
-          environment_variables:
-            plaintext:              
-              "S3_BUCKET": ""        
-          containers:
-            LambdaFunctions:
-              phases:
-                during_build:
-                  commands:
-                    - cd cloudformation            
-                    - aws cloudformation package --template listbuildings-sam.yml --s3-bucket $S3_BUCKET --output-template post-listbuildings-sam.yml
-                    - aws cloudformation package --template updatebuilding-sam.yml --s3-bucket $S3_BUCKET --output-template post-updatebuilding-sam.yml
-              artifacts:
-                files:
-                  - post-listbuildings-sam.yml
-                  - post-updatebuilding-sam.yml                  
-      TimeoutInMinutes: 5
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: passrole-for-pipeline
+          PolicyDocument: 
+            Statement: 
+              - Action: 
+                  - "iam:PassRole"                
+                Effect: Allow
+                Resource: !GetAtt 
+                  - CloudFormationRole
+                  - Arn
+        - PolicyName: artifacts-for-pipeline
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 's3:PutObject'
+                  - 's3:GetObject'                  
+                Resource:
+                  'Fn::Join':
+                    - ''
+                    - - 'Fn::GetAtt':
+                          - PipelineArtifactsBucket
+                          - Arn
+                      - /*
+                Effect: Allow
+              - Action:            
+                  - cloudformation:*
+                Resource: "*"
+                Effect: Allow
+        - PolicyName: codebuild-assets-for-pipeline
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 'codebuild:BatchGetBuilds'
+                  - 'codebuild:StartBuild'
+                Resource: !GetAtt 
+                  - AssetsBuildProject
+                  - Arn
+                Effect: Allow      
+        - PolicyName: codebuild-lambdas-for-pipeline
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 'codebuild:BatchGetBuilds'
+                  - 'codebuild:StartBuild'
+                Resource: !GetAtt 
+                  - LambdasBuildProject
+                  - Arn
+                Effect: Allow
 
-  ###########################################
-  # Pipeline Definition
-  ###########################################
-
+  # Project Pipeline
   ProjectCodePipeline:
     Type: 'AWS::CodePipeline::Pipeline'
     Properties:
@@ -387,7 +297,22 @@ Resources:
                 OAuthToken: !Ref GitHubOAuthToken
               OutputArtifacts:
                 - Name: !Sub '${ProjectName}-SourceArtifact'
-        - Name: Build
+        - Name: Build-Lambdas
+          Actions:
+            - Name: build-and-deploy-lambdas
+              InputArtifacts:
+                - Name: !Sub '${ProjectName}-SourceArtifact'
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Version: '1'
+                Provider: CodeBuild
+              OutputArtifacts:
+                - Name: !Sub '${ProjectName}-Assets-BuildArtifact'
+              Configuration:
+                ProjectName: !Sub '${ProjectName}-build-lambdas'
+              RunOrder: 1        
+        - Name: Build-Assets
           Actions:
             - Name: build-and-deploy-assets
               InputArtifacts:
@@ -401,66 +326,6 @@ Resources:
                 - Name: !Sub '${ProjectName}-Assets-BuildArtifact'
               Configuration:
                 ProjectName: !Sub '${ProjectName}-build-assets'
-              RunOrder: 1        
-            - Name: build-and-deploy-lambdas
-              InputArtifacts:
-                - Name: !Sub '${ProjectName}-SourceArtifact'
-              ActionTypeId:
-                Category: Build
-                Owner: AWS
-                Version: '1'
-                Provider: CodeBuild
-              OutputArtifacts:
-                - Name: !Sub '${ProjectName}-Lambda-BuildArtifact'
-              Configuration:
-                ProjectName: !Sub '${ProjectName}-build-lambdas'
-              RunOrder: 2
-            # - Name: build-sam
-            #   InputArtifacts:
-            #     - Name: !Sub '${ProjectName}-SourceArtifact'
-            #   ActionTypeId:
-            #     Category: Build
-            #     Owner: AWS
-            #     Version: '1'
-            #     Provider: CodeBuild
-            #   OutputArtifacts:
-            #     - Name: !Sub '${ProjectName}-SAM-BuildArtifact'
-            #   Configuration:
-            #     ProjectName: !Sub '${ProjectName}-build-sam'
-            #   RunOrder: 3
-
-        - Name: Deploy
-          Actions:
-            - Name: create-changeset
-              InputArtifacts:
-                - Name: !Sub '${ProjectName}-SourceArtifact'
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Version: "1"
-                Provider: CloudFormation
-              OutputArtifacts: []
-              Configuration:
-                StackName: !Sub "${ProjectName}-serverless-stack"
-                ActionMode: CHANGE_SET_REPLACE
-                RoleArn: !Ref CloudFormationRole
-                ChangeSetName: pipeline-changeset
-                Capabilities: CAPABILITY_NAMED_IAM
-                TemplatePath: !Sub '${ProjectName}-SourceArtifact::cloudformation/functions-stack.yml'
-                ParameterOverrides: !Sub '{ "ProjectName": "${ProjectName}", "DynamoDbRole": "${DynamoDbRole}","LambdaBucket": "${LambdaBucket}" }'
-              RunOrder: 1
-            - Name: execute-changeset
-              InputArtifacts: []
-              ActionTypeId:
-                Category: Deploy
-                Owner: AWS
-                Version: "1"
-                Provider: CloudFormation
-              OutputArtifacts: []
-              Configuration:
-                StackName: !Sub "${ProjectName}-serverless-stack"
-                ActionMode: CHANGE_SET_EXECUTE
-                ChangeSetName: pipeline-changeset
-              RunOrder: 2          
+              RunOrder: 1             
     DependsOn:
       -  PipelineArtifactsBucket
