@@ -64,7 +64,7 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       Policies:
-        - PolicyName: GoalsPolicy
+        - PolicyName: DynamoDbPolicy
           PolicyDocument:
             Version: 2012-10-17
             Statement:

@@ -26,7 +26,7 @@ Resources:
     Properties:
       Handler: ListBuildings.handler
       Runtime: nodejs8.10
-      Role: !Ref DynamoDbRole
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${DynamoDbRole}
 
   ListBuildingsPermissions:
     Type: 'AWS::Lambda::Permission'
@@ -49,7 +49,7 @@ Resources:
     Properties:
       Handler: UpdateBuilding.handler
       Runtime: nodejs8.10
-      Role: !Ref DynamoDbRole
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${DynamoDbRole}
 
   UpdateBuildingPermissions:
     Type: 'AWS::Lambda::Permission'
