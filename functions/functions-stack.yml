@@ -16,6 +16,10 @@ Parameters:
     AppApi:
         Description: "Gateway API"
         Type: "String"
+    ApiResource:
+        Description: "API Resource"
+        Type: "String"
+
 Resources:
   ListBuildings:
     Type: AWS::Serverless::Function
@@ -84,7 +88,7 @@ Resources:
             - /invocations
         IntegrationResponses:
           - StatusCode: 200
-      ResourceId: !Ref BuildingsApiResource
+      ResourceId: !Ref ApiResource
       RestApiId: !Ref AppApi
       MethodResponses:
         - StatusCode: 200
@@ -112,7 +116,7 @@ Resources:
           - StatusCode: 200
       RequestParameters:
         method.request.path.id: true
-      ResourceId: !Ref BuildingsApiResource
+      ResourceId: !Ref ApiResource
       RestApiId: !Ref AppApi
       MethodResponses:
         - StatusCode: 200
