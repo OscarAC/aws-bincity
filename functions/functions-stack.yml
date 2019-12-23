@@ -7,9 +7,9 @@ Parameters:
     DynamoDbRole:
         Description: "DynamoDB Role ARN to assign to functions"
         Type: "String"    
-    TableName:
-        Description: "DynamoDB Table Name"
-        Type: "String"
+    # TableName:
+    #     Description: "DynamoDB Table Name"
+    #     Type: "String"
     UserPool:
         Description: "Cognito UserPool ARN"
         Type: "String"
