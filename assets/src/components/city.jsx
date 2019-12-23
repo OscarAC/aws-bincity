@@ -17,7 +17,7 @@ class City extends Component {
     }
 
     onBuildingSelect = (building) => {        
-        if(building && typeof(building.number) != 'undefined')
+        if(building && typeof(building.buildingId) != 'undefined')
             this.props.actions.setCurrentBuilding(building)
     }
 

@@ -1,18 +1,21 @@
 import { FETCH_BUILDINGS, FETCH_CURRENT_BUILDING, SET_CURRENT_BUILDING, UPDATE_CURRENT_BUILDING } from './types';
+import * as Util from './util';
 
 export const fetchBuildings = () => dispatch => {
 
-    let buildings =
+    let buildings_mock =
         [
             {
-                number: 0,
-                floors: [[1, 0, 0, 1, 0, 1, 1, 0], [0, 1, 1, 0, 1, 0, 0, 1]]
+                buildingId: 0,
+                floors: [150,255,150,255]
             },
             {
-                number: 1,
-                floors: [[0, 0, 1, 1, 0, 1, 1, 0]]
+                buildingId: 1,
+                floors: [105,150]
             }
         ]
+
+    let buildings = Util.buildingsExpand(buildings_mock);
 
     dispatch({
         type: FETCH_BUILDINGS,

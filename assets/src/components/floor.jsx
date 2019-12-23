@@ -1,15 +1,15 @@
 import React, { Component } from "react";
 import './floor.css';
 
-const wallOneApartments = '10px 0px 0 0 {3}, 20px 0px 0 0 {2}, 30px 0px 0 0 {1}, 40px 0px 0 0 {0}';
-const wallTwoApartments = '0px 10px 0 0 {0}, 0px 20px 0 0 {1}, 0px 30px 0 0 {2}, 0px 40px 0 0 {3}';
+const wallOneApartments = '10px 0px 0 0 {0}, 20px 0px 0 0 {1}, 30px 0px 0 0 {2}, 40px 0px 0 0 {3}';
+const wallTwoApartments = '0px 10px 0 0 {4}, 0px 20px 0 0 {5}, 0px 30px 0 0 {6}, 0px 40px 0 0 {7}';
 
 class Floor extends Component {
 
     renderApartments = (wallStr, offset) => {
         return {
             boxShadow: wallStr.replace(/{(\d+)}/g, (match, number) => {
-                return this.props.model[(parseInt(number) + offset)] > 0 ? 'yellow' : 'black';
+                return this.props.model[(parseInt(number))] > 0 ? 'yellow' : 'black';
             })
         };
     }

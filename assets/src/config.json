@@ -1,0 +1,13 @@
+{
+    "cognito": {
+        "region": "east",
+        "userPoolId": "east-userpool-1",
+        "clientId": "12345",
+        "identityPoolId": "east-idpool-2"
+    },
+    
+    "gateway": {
+        "region": "east",
+        "url": "https://google.com"
+    }
+}

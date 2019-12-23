@@ -28,14 +28,15 @@ class Control extends Component {
     render() {
 
         console.log('rendering control');
+
         const sections = [];
         for (let floor = this.props.building.floors.length - 1; floor >= 0; floor--) {
             sections.push(
                 <section key={floor}>
                     <div>{floor}</div>
                     <div>
-                        {
-                            this.props.building.floors[floor].map((windows, apartment) => {
+                        {                            
+                            this.props.building.floors[floor].reverse().map((windows, apartment) => {                                
                                 return (<input key={floor+''+apartment}
                                     type="checkbox"
                                     defaultChecked={windows > 0}

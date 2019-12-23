@@ -1,26 +1,132 @@
 AWSTemplateFormatVersion : '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
+Parameters:
+    ProjectName:
+        Description: "Name of the Project"
+        Type: "String"
+    DynamoDbRole:
+        Description: "DynamoDB Role ARN to assign to functions"
+        Type: "String"    
+    TableName:
+        Description: "DynamoDB Table Name"
+        Type: "String"
+    UserPool:
+        Description: "Cognito UserPool ARN"
+        Type: "String"
+    AppApi:
+        Description: "Gateway API"
+        Type: "String"
 Resources:
   ListBuildings:
     Type: AWS::Serverless::Function
     Properties:
       Handler: ListBuildings.handler
       Runtime: nodejs8.10
-      Events:
-        HelloWorldApi:
-          Type: Api
-          Properties:
-            Path: /
-            Method: GET
+      Role: ${DynamoDbRole}     
+
+  ListBuildingsPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref ListBuildings
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
 
   UpdateBuilding:
     Type: AWS::Serverless::Function
     Properties:
       Handler: UpdateBuilding.handler
       Runtime: nodejs8.10
-      Events:
-        HelloWorldApi:
-          Type: Api
-          Properties:
-            Path: /
-            Method: PUT
+      Role: ${DynamoDbRole}     
+
+  UpdateBuildingPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref UpdateBuilding
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+
+  BuildingsApiRequestGET:
+    DependsOn:
+      - ListBuildingsPermissions
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: GET
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - ListBuildings
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      ResourceId: !Ref BuildingsApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+
+  BuildingsApiRequestPUT:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: PUT
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - UpdateBuilding
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.path.id: true
+      ResourceId: !Ref BuildingsApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+
+
+  
+  # APIDeployment:
+  #   DependsOn:
+  #     - BuildingsApiRequestGET
+  #     - BuildingsApiRequestPUT      
+  #   Type: 'AWS::ApiGateway::Deployment'
+  #   Properties:
+  #     Description: Prod deployment for API
+  #     RestApiId: !Ref AppApi
+  #     StageName: prod

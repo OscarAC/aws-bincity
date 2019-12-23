@@ -1,0 +1,4 @@
+- Limit building size
+- Remove floor
+- letters in buildings
+- floor click to create new building

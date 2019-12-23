@@ -1,0 +1,63 @@
+.App {
+  margin-top: 0px;
+  color: #79503a;
+  background-color: transparent
+}
+
+.navbar-default {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  border: 0 !important;
+  border-bottom: 1px dotted #79503a !important; 
+}
+
+.navbar-default .navbar-brand {
+  text-shadow: none !important;
+  padding: 5px 0;
+  font-size: 28px;
+  line-height: 30px;
+  font-weight: 400;
+  font-style: italic;
+}
+
+.navbar-brand, .navbar-nav>li>a {
+  color: #5c473c !important;
+  text-shadow: none !important;
+  font-size: 20px;
+}
+
+.navbar-brand, .navbar-nav>li {
+  padding: 10px 0;
+  line-height: 30px;
+  display: block;
+}
+
+.navbar-default .navbar-nav>.open>a, .navbar-default .navbar-nav>.active>a {
+  background-image: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.navbar-default .navbar-nav>.open>a, .navbar-default .navbar-nav>.active>a:active {
+  background-image: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.navbar-default .navbar-nav>.open>a, .navbar-default .navbar-nav>.active>a:focus {
+  background-image: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.App .button {
+  color: #79503a;
+  border-color: #5c473c;
+}
+
+.App .button:hover {
+  background-color: #eedfd7 !important;
+  border-color: #79503a;
+  color: #79503a;
+}

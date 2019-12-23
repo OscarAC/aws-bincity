@@ -11,7 +11,7 @@ class Building extends Component {
     render() {
 
         let floors = this.props.model.floors;
-        let alpha =  10 + 120 * this.props.model.number;
+        let alpha =  10 + 120 * this.props.model.buildingId;
         let delta =  floors.length * 14;
 
         return (

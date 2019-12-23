@@ -48,6 +48,226 @@ Resources:
         ReadCapacityUnits: 1
         WriteCapacityUnits: 1
 
+  # DynamoDB Role
+  DynamoDbRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: GoalsPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:Query'
+                  - 'dynamodb:UpdateItem'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:Scan'
+                  - 'dynamodb:DeleteItem'
+                Resource: !GetAtt TBinCity.Arn
+
+  # Cognito SNS Role
+  SNSRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - cognito-idp.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: CognitoSNSPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action: 'sns:publish'
+                Resource: '*'
+
+  # Cognito User Pool
+  UserPool:
+    Type: 'AWS::Cognito::UserPool'
+    Properties:
+      UserPoolName: !Ref ProjectName
+      UsernameAttributes:
+        - email
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: false
+        InviteMessageTemplate:
+          EmailMessage: 'Your username is {username} and temporary password is {####}. '
+          EmailSubject: Your temporary password
+          SMSMessage: 'Your username is {username} and temporary password is {####}.'
+        UnusedAccountValidityDays: 7
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: false
+          RequireNumbers: false
+          RequireSymbols: false
+          RequireUppercase: false
+      AutoVerifiedAttributes:
+        - email
+      EmailVerificationMessage: 'Here is your verification code: {####}'
+      EmailVerificationSubject: Your verification code
+      Schema:
+        - Name: email
+          AttributeDataType: String
+          Mutable: false
+          Required: true
+
+  # Cognito UserPool Client
+  UserPoolClient:
+    Type: 'AWS::Cognito::UserPoolClient'
+    Properties:
+      ClientName: !Ref ProjectName
+      GenerateSecret: false
+      UserPoolId: !Ref UserPool
+
+  # Cognito IdentityPool
+  IdentityPool:
+    Type: 'AWS::Cognito::IdentityPool'
+    Properties:
+      IdentityPoolName: !Sub '${ProjectName}Identity'
+      AllowUnauthenticatedIdentities: true
+      CognitoIdentityProviders:
+        - ClientId: !Ref UserPoolClient
+          ProviderName: !GetAtt 
+            - UserPool
+            - ProviderName
+  
+  # Cognito UnAuthorized Role
+  CognitoUnAuthorizedRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud': !Ref IdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': unauthenticated
+      Policies:
+        - PolicyName: CognitoUnauthorizedPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                Resource: '*'
+
+  # Cognito Authorized Role
+  CognitoAuthorizedRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: cognito-identity.amazonaws.com
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Condition:
+              StringEquals:
+                'cognito-identity.amazonaws.com:aud': !Ref IdentityPool
+              'ForAnyValue:StringLike':
+                'cognito-identity.amazonaws.com:amr': authenticated
+      Policies:
+        - PolicyName: CognitoAuthorizedPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'mobileanalytics:PutEvents'
+                  - 'cognito-sync:*'
+                  - 'cognito-identity:*'
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - 'execute-api:Invoke'
+                Resource: !Join 
+                  - ''
+                  - - 'arn:aws:execute-api:'
+                    - !Ref 'AWS::Region'
+                    - ':'
+                    - !Ref 'AWS::AccountId'
+                    - ':'
+                    - !Ref AppApi
+                    - /*
+  
+  # Identity Pool Role Mapping
+  IdentityPoolRoleMapping:
+    Type: 'AWS::Cognito::IdentityPoolRoleAttachment'
+    Properties:
+      IdentityPoolId: !Ref IdentityPool
+      Roles:
+        authenticated: !GetAtt 
+          - CognitoAuthorizedRole
+          - Arn
+        unauthenticated: !GetAtt 
+          - CognitoUnAuthorizedRole
+          - Arn
+  
+  # Gateway API
+  AppApi:
+    Type: 'AWS::ApiGateway::RestApi'
+    Properties:
+      Name: !Ref ProjectName
+      Description: API used for Project requests
+      FailOnWarnings: true
+  
+  # Gateway Resource
+  BuildingsApiResource:
+    Type: 'AWS::ApiGateway::Resource'
+    Properties:
+      RestApiId: !Ref AppApi
+      ParentId: !GetAtt 
+        - AppApi
+        - RootResourceId
+      PathPart: buildings
+
+  # API Authorizer
+  ApiAuthorizer:
+    Type: 'AWS::ApiGateway::Authorizer'
+    Properties:
+      AuthorizerResultTtlInSeconds: 300
+      IdentitySource: method.request.header.Authorization
+      Name: CognitoDefaultUserPoolAuthorizer
+      ProviderARNs:
+        - !GetAtt 
+          - UserPool
+          - Arn
+      RestApiId: !Ref AppApi
+      Type: COGNITO_USER_POOLS
+
+
+
+
   # Assets S3 Bucket
   AssetsBucket:
     Type: 'AWS::S3::Bucket'
@@ -73,7 +293,6 @@ Resources:
       AccessControl: Private
       VersioningConfiguration:
         Status: Enabled
-
 
   # CodeBuild Role
   CodeBuildRole:
@@ -109,18 +328,130 @@ Resources:
                     - ''
                     - - !GetAtt LambdaBucket.Arn
                       - /*         
-                Effect: Allow        
-        - PolicyName: codebuild-logs
+                Effect: Allow
+        - PolicyName: !Sub "${ProjectName}-codebuild-general"
           PolicyDocument:
             Statement:
               - Action:
                   - 'logs:CreateLogStream'
                   - 'logs:PutLogEvents'
                   - 'logs:CreateLogGroup'
-                  - 'cloudfront:CreateInvalidation'
+                  - 'cloudfront:CreateInvalidation'                   
+                  - 'iam:PassRole'                
                 Resource: '*'
                 Effect: Allow
       Path: /
+
+  # CloudFormation Role
+  CloudFormationRole:
+    Description: Creating service role in IAM for AWS CloudFormation
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${ProjectName}-cloudformation-role"
+      AssumeRolePolicyDocument:
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+              - cloudformation.amazonaws.com
+          Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-cloudformation-policies'
+          PolicyDocument:
+            Statement:
+              - Action:                  
+                  - 's3:GetObject'
+                  - 's3:GetObjectVersion'
+                  - 's3:GetBucketVersioning'
+                Resource: '*'                  
+                Effect: Allow 
+              - Action:
+                  - 's3:PutObject'
+                Resource: !GetAtt LambdaBucket.Arn
+                Effect: Allow
+              - Action:
+                  - 'lambda:*'
+                Resource: !Sub 'arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*'
+                Effect: Allow
+              - Action:
+                  - 'apigateway:*'
+                Resource: !Sub 'arn:aws:apigateway:${AWS::Region}::*'
+                Effect: Allow
+              - Action:
+                  - 'iam:GetRole'
+                  - 'iam:CreateRole'
+                  - 'iam:DeleteRole'
+                  - 'iam:AttachRolePolicy'
+                  - 'iam:DetachRolePolicy'
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/${ProjectName}-*'
+                Effect: Allow
+              - Action:
+                  - 'iam:PassRole'
+                Resource: '*'
+                Effect: Allow
+              - Action:
+                  - 'cloudformation:CreateChangeSet'
+                Resource: !Sub 'arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31'
+                Effect: Allow
+      Path: /
+
+  # CodePipeline Role
+  CodePipelineRole:
+    Description: Creating service role in IAM for AWS CodePipeline
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - codepipeline.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-artifacts-for-pipeline'
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 's3:PutObject'
+                  - 's3:GetObject'                  
+                Resource:
+                  'Fn::Join':
+                    - ''
+                    - - 'Fn::GetAtt':
+                          - PipelineArtifactsBucket
+                          - Arn
+                      - /*
+                Effect: Allow  
+        - PolicyName: !Sub '${ProjectName}-general-for-pipeline'
+          PolicyDocument: 
+            Statement: 
+              - Action: 
+                  - "iam:PassRole"
+                  - 'cloudformation:*'
+                  - 'cloudwatch:*'
+                  - 'lambda:*'
+                Resource: '*'
+                Effect: Allow
+        - PolicyName: !Sub '${ProjectName}-codebuild-assets-for-pipeline'
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 'codebuild:BatchGetBuilds'
+                  - 'codebuild:StartBuild'
+                Resource: !GetAtt 
+                  - AssetsBuildProject
+                  - Arn
+                Effect: Allow      
+        - PolicyName: !Sub '${ProjectName}-codebuild-lambdas-for-pipeline'
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 'codebuild:BatchGetBuilds'
+                  - 'codebuild:StartBuild'
+                Resource: !GetAtt 
+                  - LambdasBuildProject
+                  - Arn
+                Effect: Allow
 
   # Assets CodeBuild Project
   AssetsBuildProject:    
@@ -148,7 +479,7 @@ Resources:
               commands:                
                 - echo Installing NPM dependencies...
                 - cd assets
-                - npm install fibers node-sass sass redux typescript redux-thunk react-redux --save
+                - npm install fibers node-sass sass redux typescript redux-thunk react-redux react-router-dom react-bootstrap bootstrap jquery --save
                 - npm install
             build:
               commands:
@@ -183,90 +514,17 @@ Resources:
             install:
               runtime-versions:
                 nodejs: 10
-            build:
+            pre_build:
               commands:                                
                 - cd functions
-                - aws cloudformation package --template-file ./functions-stack.yml --output-template-file outputtemplate.yml --s3-bucket ${LambdaBucket}
-                - aws cloudformation deploy --template-file ./outputtemplate.yml --stack-name ${ProjectName}-Lambdas --capabilities CAPABILITY_IAM            
+            build:
+              commands:
+                - aws cloudformation package --template-file ./functions-stack.yml --output-template-file post-functions-stack.yml --s3-bucket ${LambdaBucket}
+          artifacts:
+            files:
+              - '**/*'
+            base-directory: functions
       TimeoutInMinutes: 5
-
-  # CloudFormation Role  
-  CloudFormationRole: 
-    Properties: 
-      AssumeRolePolicyDocument: 
-        Statement: 
-          Action: 
-            - "sts:AssumeRole"
-          Effect: Allow
-          Principal: 
-            Service: 
-              - cloudformation.amazonaws.com
-        Version: "2012-10-17"
-      ManagedPolicyArns: 
-        - "arn:aws:iam::aws:policy/AdministratorAccess"
-      Path: /
-    Type: "AWS::IAM::Role"
-
-  # CodePipeline Role
-  CodePipelineRole:
-    Description: Creating service role in IAM for AWS CodePipeline
-    Type: 'AWS::IAM::Role'
-    Properties:
-      AssumeRolePolicyDocument:
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service:
-                - codepipeline.amazonaws.com
-            Action: 'sts:AssumeRole'
-      Policies:
-        - PolicyName: passrole-for-pipeline
-          PolicyDocument: 
-            Statement: 
-              - Action: 
-                  - "iam:PassRole"                
-                Effect: Allow
-                Resource: !GetAtt 
-                  - CloudFormationRole
-                  - Arn
-        - PolicyName: artifacts-for-pipeline
-          PolicyDocument:
-            Statement:
-              - Action:
-                  - 's3:PutObject'
-                  - 's3:GetObject'                  
-                Resource:
-                  'Fn::Join':
-                    - ''
-                    - - 'Fn::GetAtt':
-                          - PipelineArtifactsBucket
-                          - Arn
-                      - /*
-                Effect: Allow
-              - Action:            
-                  - cloudformation:*
-                Resource: "*"
-                Effect: Allow
-        - PolicyName: codebuild-assets-for-pipeline
-          PolicyDocument:
-            Statement:
-              - Action:
-                  - 'codebuild:BatchGetBuilds'
-                  - 'codebuild:StartBuild'
-                Resource: !GetAtt 
-                  - AssetsBuildProject
-                  - Arn
-                Effect: Allow      
-        - PolicyName: codebuild-lambdas-for-pipeline
-          PolicyDocument:
-            Statement:
-              - Action:
-                  - 'codebuild:BatchGetBuilds'
-                  - 'codebuild:StartBuild'
-                Resource: !GetAtt 
-                  - LambdasBuildProject
-                  - Arn
-                Effect: Allow
 
   # Project Pipeline
   ProjectCodePipeline:
@@ -297,9 +555,10 @@ Resources:
                 OAuthToken: !Ref GitHubOAuthToken
               OutputArtifacts:
                 - Name: !Sub '${ProjectName}-SourceArtifact'
+
         - Name: Build-Lambdas
           Actions:
-            - Name: build-and-deploy-lambdas
+            - Name: build-lambdas-sam
               InputArtifacts:
                 - Name: !Sub '${ProjectName}-SourceArtifact'
               ActionTypeId:
@@ -308,10 +567,45 @@ Resources:
                 Version: '1'
                 Provider: CodeBuild
               OutputArtifacts:
-                - Name: !Sub '${ProjectName}-Assets-BuildArtifact'
+                - Name: !Sub '${ProjectName}-Lambdas-BuildArtifact'
               Configuration:
                 ProjectName: !Sub '${ProjectName}-build-lambdas'
-              RunOrder: 1        
+              RunOrder: 1
+            
+            - Name: create-lambda-changeset
+              InputArtifacts:
+                - Name: !Sub '${ProjectName}-Lambdas-BuildArtifact'
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: '1'
+                Provider: CloudFormation
+              OutputArtifacts: []
+              Configuration:
+                StackName: !Sub '${ProjectName}-lambdas-stack'
+                ActionMode: CHANGE_SET_REPLACE
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                ChangeSetName: !Sub '${ProjectName}-lambdas-changeset'
+                Capabilities: CAPABILITY_NAMED_IAM
+                TemplatePath: !Sub '${ProjectName}-Lambdas-BuildArtifact::post-functions-stack.yml'
+                ParameterOverrides: !Sub '{"DynamoDbRole": "${DynamoDbRole}", "ProjectName": "${ProjectName}", "UserPool": "${UserPool}", "AppApi": "${AppApi}"}'
+              RunOrder: 2
+
+            - Name: execute-lambda-changeset
+              InputArtifacts: []
+              ActionTypeId:
+                Category: Deploy
+                Owner: AWS
+                Version: '1'
+                Provider: CloudFormation
+              OutputArtifacts: []
+              Configuration:
+                StackName: !Sub '${ProjectName}-lambdas-stack'
+                ActionMode: CHANGE_SET_EXECUTE
+                RoleArn: !GetAtt CloudFormationRole.Arn
+                ChangeSetName: !Sub '${ProjectName}-lambdas-changeset'
+              RunOrder: 3
+
         - Name: Build-Assets
           Actions:
             - Name: build-and-deploy-assets

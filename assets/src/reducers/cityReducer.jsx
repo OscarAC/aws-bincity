@@ -1,6 +1,6 @@
-import { FETCH_BUILDINGS, FETCH_CURRENT_BUILDING, SET_CURRENT_BUILDING, UPDATE_CURRENT_BUILDING } from '../actions/types';
+import { FETCH_BUILDINGS, SET_CURRENT_BUILDING, UPDATE_CURRENT_BUILDING } from '../actions/types';
 
-const initialState = {
+const initialState = {    
     buildings: [],
     building: {}
 }
@@ -26,12 +26,12 @@ export default function (state = initialState, action) {
             return {
                 ...state,
                 buildings: state.buildings.map((item) => {
-                    if (item.number === action.building.number) {
+                    if (item.buildingId === action.building.buildingId) {
                         return action.building;
                     }
                     return item;
                 }),
-                building: state.buildings[action.building.number]
+                building: state.buildings[action.building.buildingId]
             };
 
 
