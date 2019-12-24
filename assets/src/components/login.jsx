@@ -5,9 +5,7 @@ import * as Actions from '../actions/authActions';
 import { bindActionCreators } from 'redux';
 import { Redirect } from 'react-router';
 import './login.css';
-
-
-const emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+import { emailRegex } from '../actions/util';
 
 class Login extends Component {
 
@@ -18,8 +16,7 @@ class Login extends Component {
         this.state = {
             email: '',
             password: '',
-            valid: false,
-            loading: false
+            valid: false            
         }
     }
 
@@ -28,20 +25,9 @@ class Login extends Component {
         if (event.currentTarget.checkValidity()) {
             event.preventDefault();
             event.stopPropagation();
-            this.setState({ valid: true, loading: true });
-
-
-            this.props.actions.authenticate(true);
-            // try {
-            //   await Auth.signIn(this.state.email, this.state.password);
-            //   this.props.userHasAuthenticated(true);
-            //   this.setState({ redirect: true })
-            // } catch (e) {
-            //   alert(e.message);
-            //   this.setState({ loading: false });
-            // }
+            
+            this.props.actions.authenticate(this.state.email, this.state.password);            
         }
-
     }
 
     onChange = (event) => {
@@ -54,9 +40,8 @@ class Login extends Component {
 
     render() {
 
-        if (this.props.isAuthenticated)
+        if (this.props.authenticated)
             return <Redirect to='/' />
-
 
         const {email, password, valid} = this.state;
         
@@ -92,10 +77,15 @@ class Login extends Component {
                         disabled={!this.validateForm()}
                         className='button'
                         >                
-                        {this.state.loading ?
+                        {this.props.loading ?
                             <span><Spinner size="sm" animation="border" className="mr-2" />Logging in</span> :
                             <span>Log in</span>}
                     </Button>
+
+                    {this.props.error ? 
+                        <span className="errorMessage">Oops! {this.props.errorMessage}</span>:
+                        <span></span>
+                    }
                 </Form >
             </div>
         );
@@ -103,7 +93,10 @@ class Login extends Component {
 }
 
 const mapStateToProps = state => ({
-    isAuthenticated: state.auth.isAuthenticated
+    authenticated: state.auth.authenticated,
+    error: state.auth.error,
+    errorMessage: state.auth.errorMessage,
+    loading: state.auth.loading
 })
 
 

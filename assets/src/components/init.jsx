@@ -15,15 +15,18 @@ class Init extends Component {
         )
     }
 
-    render() {
-
-        console.log(this.props.isAuthenticated);
-        return ( this.props.isAuthenticated ? <City /> : this.renderInit());
+    render() {        
+        return ( this.props.authenticated ? <City /> : this.renderInit());
     }
 }
 
+
 const mapStateToProps = state => ({
-    isAuthenticated: state.auth.isAuthenticated
-  })
+    authenticated: state.auth.authenticated,
+    error: state.auth.error,
+    errorMessage: state.auth.errorMessage,
+    loading: state.auth.loading
+})
+
   
   export default connect(mapStateToProps, null)(Init);

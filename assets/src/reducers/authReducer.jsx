@@ -1,7 +1,10 @@
-import { FETCH_AUTH, LOGOUT } from '../actions/types';
+import { FETCH_AUTH, LOGIN_STARTED, LOGIN_SUCCESS, LOGIN_ERROR, LOGOUT } from '../actions/types';
 
-const initialState = {    
-    isAuthenticated: false
+const initialState = {
+    authenticated: false,
+    error: false,
+    errorMessage: '',
+    loading: false
 }
 
 export default function (state = initialState, action) {
@@ -11,17 +14,38 @@ export default function (state = initialState, action) {
         case FETCH_AUTH:
             return {
                 ...state,
-                isAuthenticated: action.isAuthenticated
+                authenticated: action.authenticated,
+                error: action.error,
+                errorMessage: action.errorMessage,
+                loading: action.loading
             };
 
-        case LOGOUT:
+        case  LOGIN_STARTED:
             return {
                 ...state,
-                isAuthenticated: false
+                loading: true
+            }
+
+        case LOGIN_SUCCESS:
+            return {
+                ...state,
+                authenticated: true,
+                error: false,
+                errorMessage: '',
+                loading: false
+            }
+        
+        case LOGIN_ERROR:
+            return {
+                ...state,
+                authenticated: false,
+                error: true,
+                errorMessage: action.errorMessage,
+                loading: false
             }
 
         default:
-            return state;        
+            return state;
     }
 
 }

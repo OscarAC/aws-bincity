@@ -1,8 +1,6 @@
 import React, { Component } from "react";
 import { Route, Switch, withRouter, Redirect } from "react-router-dom";
-import Auth from "@aws-amplify/auth";
 import { Form, Nav, Navbar, Button } from "react-bootstrap";
-import City from './components/city';
 import Init from './components/init';
 import NotFound from './components/notfound';
 import './app.css';
@@ -11,8 +9,6 @@ import SignUp from './components/signup';
 import { connect } from 'react-redux';
 import * as Actions from './actions/authActions';
 import { bindActionCreators } from 'redux';
-
-import config from './config.json';
 
 class App extends Component {
 

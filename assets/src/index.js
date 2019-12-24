@@ -7,6 +7,28 @@ import { BrowserRouter as Router } from "react-router-dom";
 import './index.css';
 import * as serviceWorker from './serviceWorker';
 import App from './app'
+import Amplify from "@aws-amplify/core";
+
+import config from './config.json';
+
+Amplify.configure({
+    Auth: {
+        mandatorySignIn: true,
+        region: config.region,
+        userPoolId: config.cognito.userPoolId,
+        identityPoolId: config.cognito.identityPoolId,
+        userPoolWebClientId: config.cognito.clientId
+    },
+    API: {
+        endpoints: [
+            {
+                name: "buildings",
+                endpoint: config.gateway.url,
+                region: config.region
+            },
+        ]
+    }
+});
 
 ReactDOM.render(
     <Provider store={store}>

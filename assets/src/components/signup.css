@@ -1,4 +1,4 @@
-.login {
+.signup {
     width: 50%;
     height: 50%;
     padding: 30px;
@@ -11,23 +11,23 @@
 }
 
 
-.login form {
+.signup form {
     margin: 0 auto;
     max-width: 320px;
 }
 
-.login .button {
+.signup .button {
     background-color: transparent !important;
     border-color: #79503a;
     color: #79503a;
 }
 
-.login .button:hover {
+.signup .button:hover {
     background-color: #eedfd7 !important;
     border-color: #79503a;
     color: #79503a;
 }
 
-.login .errorMessage {
+.signup .errorMessage {
     color:  #c55416;
 }

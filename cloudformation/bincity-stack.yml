@@ -265,18 +265,65 @@ Resources:
       RestApiId: !Ref AppApi
       Type: COGNITO_USER_POOLS
 
-
-
-
   # Assets S3 Bucket
   AssetsBucket:
     Type: 'AWS::S3::Bucket'
     Properties:
-      AccessControl: PublicRead
+      AccessControl: Private
       MetricsConfigurations:
         - Id: AssetsBucket
       WebsiteConfiguration:
         IndexDocument: index.html
+
+  # Assets S3 Bucket Policy
+  AssetsBucketPolicy:
+    Type: 'AWS::S3::BucketPolicy'
+    Properties:
+      Bucket: !Ref AssetsBucket
+      PolicyDocument:
+        Statement:
+          - Action: 's3:GetObject'
+            Effect: Allow
+            Resource: !Sub 'arn:aws:s3:::${AssetsBucket}/*'
+            Principal:
+              AWS: !Sub >-
+                arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity
+                ${AssetsBucketOriginAccessIdentity}
+    DependsOn:
+      - AssetsBucketOriginAccessIdentity
+
+  # Assets S3 Bucket CloudFront Access Identity
+  AssetsBucketOriginAccessIdentity:
+    Type: 'AWS::CloudFront::CloudFrontOriginAccessIdentity'
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: !Sub 'OriginAccessIdentity for ${AssetsBucket}'
+
+  # Assets CloudFront Distribution
+  AssetsCDN:
+    Type: 'AWS::CloudFront::Distribution'
+    DependsOn:
+      - AssetsBucketOriginAccessIdentity
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub 'CDN for ${AssetsBucket}'
+        DefaultRootObject: index.html
+        Origins:
+          - DomainName: !Join
+              - ''
+              - - !Sub '${AssetsBucket}.s3'
+                - !If [IADRegion, '', !Sub '-${AWS::Region}']
+                - '.amazonaws.com'
+            Id: S3
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub >-
+                origin-access-identity/cloudfront/${AssetsBucketOriginAccessIdentity}
+        DefaultCacheBehavior:
+          TargetOriginId: S3
+          ViewerProtocolPolicy: https-only
+          ForwardedValues:
+            QueryString: 'false'
 
   # Lambda Functions S3 Bucket
   LambdaBucket:
@@ -479,6 +526,7 @@ Resources:
               commands:                
                 - echo Installing NPM dependencies...
                 - cd assets
+                - echo '{"region": "${AWS::Region}", "cognito": { "userPoolId": "${UserPool}", "clientId": "${UserPoolClient}", "identityPoolId": "${IdentityPool}"}, "gateway": {"url": "${BuildingsApiResource}"} }' > src/config.json
                 - npm install fibers node-sass sass redux typescript redux-thunk react-redux react-router-dom react-bootstrap bootstrap jquery --save
                 - npm install
             build:
@@ -489,7 +537,8 @@ Resources:
                 - echo Uploading to AssetsBucket 
                 - aws s3 cp --recursive ./build s3://${AssetsBucket}/
                 - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/service-worker.js s3://${AssetsBucket}/
-                - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/index.html s3://${AssetsBucket}/                
+                - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/index.html s3://${AssetsBucket}/
+                - aws cloudfront create-invalidation --distribution-id ${AssetsCDN} --paths /index.html /service-worker.js
       TimeoutInMinutes: 5
 
    # Functions CodeBuild Project
@@ -623,3 +672,12 @@ Resources:
               RunOrder: 1             
     DependsOn:
       -  PipelineArtifactsBucket
+
+Outputs:  
+  WebApplication:
+    Description: The URL for the web application
+    Export:
+      Name: !Sub '${ProjectName}WebApp'
+    Value: !Sub 
+      - 'https://${Domain}'
+      - Domain: !GetAtt AssetsCDN.DomainName
