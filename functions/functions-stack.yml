@@ -174,11 +174,42 @@ Resources:
           ResponseModels:
             application/json: Empty
 
+  ApartmentsApiRequestOPTIONS:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      ResourceId: !Ref ApiResource
+      RestApiId: !Ref AppApi
+      AuthorizationType: None
+      HttpMethod: OPTIONS
+      Integration:
+        Type: MOCK
+        IntegrationResponses:
+          - ResponseParameters:
+              method.response.header.Access-Control-Allow-Headers: >-
+                'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'
+              method.response.header.Access-Control-Allow-Methods: '''GET,POST,PUT,DELETE,OPTIONS,HEAD,PATCH'''
+              method.response.header.Access-Control-Allow-Origin: '''*'''
+            ResponseTemplates:
+              application/json: ''
+            StatusCode: '200'
+        PassthroughBehavior: WHEN_NO_MATCH
+        RequestTemplates:
+          application/json: '{"statusCode": 200}'
+      MethodResponses:
+        - ResponseModels:
+            application/json: Empty
+          ResponseParameters:
+            method.response.header.Access-Control-Allow-Headers: true
+            method.response.header.Access-Control-Allow-Methods: true
+            method.response.header.Access-Control-Allow-Origin: true
+          StatusCode: '200'
+
   APIDeployment:
     DependsOn:
       - ApartmentsApiRequestGET      
       - ApartmentsApiRequestPOST
-      - ApartmentsApiRequestGET      
+      - ApartmentsApiRequestGET
+      - ApartmentsApiRequestOPTIONS      
     Type: 'AWS::ApiGateway::Deployment'
     Properties:
       Description: Prod deployment for API

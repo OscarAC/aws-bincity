@@ -1,7 +1,7 @@
 import { FETCH_AUTH, LOGIN_STARTED, LOGIN_SUCCESS, LOGIN_ERROR, LOGOUT } from '../actions/types';
 
 const initialState = {
-    authenticated: true,
+    authenticated: false,
     error: false,
     errorMessage: '',
     loading: false
