@@ -2,6 +2,11 @@ const AWS = require('aws-sdk');
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 let constants = require('./constants');
 
+const headers = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Credentials": true
+};
+
 exports.handler = (event, context, callback) => {
 
   const data = JSON.parse(event.body);
@@ -18,8 +23,9 @@ exports.handler = (event, context, callback) => {
   else {
 
     callback(null, {
-      'statusCode': 400,
-      "body": null
+      statusCode: 400,
+      headers: headers,
+      body: null
     });
     return;
   }
@@ -45,8 +51,9 @@ exports.handler = (event, context, callback) => {
 
       callback(null,
         {
-          'statusCode': 500,
-          "body": null
+          statusCode: 500,
+          headers: headers,
+          body: err
         });
       return;
     }
@@ -66,8 +73,9 @@ exports.handler = (event, context, callback) => {
   if (currentApartmentCount / 8 >= 16) {
     callback(null,
       {
-        'statusCode': 403,
-        "body": 'Maximum number of floors for the building has been reached'
+        statusCode: 403,
+        headers: headers,
+        body: 'Maximum number of floors for the building has been reached'
       });
     return;
   }
@@ -104,14 +112,20 @@ exports.handler = (event, context, callback) => {
 
         callback(null,
           {
-            'statusCode': 500,
-            "body": null
+            statusCode: 500,
+            headers: headers,
+            body: err
           });
         return;
 
       } else {
 
-        callback(null, newFloor);
+        callback(null,
+          {
+            statusCode: 200,
+            headers: headers,
+            body: JSON.stringify(newFloor)
+          });
       }
 
     });

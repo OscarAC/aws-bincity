@@ -2,6 +2,10 @@ const AWS = require('aws-sdk');
 const uuid = require('uuid');
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
 
+const headers = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Credentials": true
+};
 
 exports.handler = (event, context, callback) => {
 
@@ -42,14 +46,20 @@ exports.handler = (event, context, callback) => {
 
       callback(null,
         {
-          'statusCode': 500,
-          "body": null
+          statusCode: 500,
+          headers: headers,
+          body: err
         });
       return;
 
     } else {
 
-      callback(null, apartments);
+      callback(null, 
+        {
+          statusCode: 200,
+          headers: headers,
+          body: JSON.stringify(apartments)
+        });
     }
   })
 };

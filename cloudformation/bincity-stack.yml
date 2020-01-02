@@ -41,6 +41,8 @@ Resources:
       AttributeDefinitions:
         - AttributeName: key
           AttributeType: S        
+        - AttributeName: building
+          AttributeType: N     
       KeySchema:
         - AttributeName: key
           KeyType: HASH
@@ -51,7 +53,12 @@ Resources:
         - IndexName: building-index
           KeySchema:
             - AttributeName: building
-              KeyType: Number
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+          ProvisionedThroughput:
+            ReadCapacityUnits: 5
+            WriteCapacityUnits: 5
 
   # DynamoDB Role
   DynamoDbRole:
@@ -541,7 +548,7 @@ Resources:
               commands:                
                 - echo Installing NPM dependencies...
                 - cd assets
-                - echo '{"region": "${AWS::Region}", "cognito": { "userPoolId": "${UserPool}", "clientId": "${UserPoolClient}", "identityPoolId": "${IdentityPool}"}, "gateway": {"url": "https://${ApartmentsApiResource}.execute-api.${AWS:Region}.amazonaws.com/prod"} }' > src/config.json
+                - echo '{"region":"${AWS::Region}","cognito":{"userPoolId":"${UserPool}","clientId":"${UserPoolClient}","identityPoolId":"${IdentityPool}"},"gateway":{"url":"https://${ApartmentsApiResource}.execute-api.${AWS::Region}.amazonaws.com/prod"}}' > src/config.json
                 - npm install fibers node-sass sass axios uuid redux typescript redux-thunk react-redux react-router-dom react-bootstrap bootstrap jquery --save
                 - npm install
             build:
