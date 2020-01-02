@@ -1,4 +1,4 @@
-import { FETCH_AUTH, LOGIN_STARTED, LOGIN_SUCCESS, LOGIN_ERROR } from './types';
+import { LOGIN_STARTED, LOGIN_SUCCESS, LOGIN_ERROR, LOGOUT } from './types';
 import Auth from "@aws-amplify/auth";
 
 export const authenticate = (email, password) => dispatch => {
@@ -19,13 +19,8 @@ export const authenticate = (email, password) => dispatch => {
 
 export const logout = () => dispatch => {
 
-    // await Auth.signOut();
-
-    // dispatch({
-    //     type: LOGOUT,
-    //     isAuthenticated: false,
-    //     authenticationError: false
-    // });
+    Auth.signOut();
+    dispatch(logoutSuccess());
 }
 
 const loginStarted = () => ({
@@ -40,3 +35,7 @@ const loginError = (msg) => ({
     type: LOGIN_ERROR,
     errorMessage: msg
 });
+
+const logoutSuccess = () => ({
+    type: LOGOUT
+})

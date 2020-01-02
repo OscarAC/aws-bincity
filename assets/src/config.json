@@ -1,1 +1,0 @@
-{"region": "east1", "cognito": { "userPoolId": "us-east-1_11", "clientId": "clientId1", "identityPoolId": "idId1"}, "gateway": {"url": "google.com"} }

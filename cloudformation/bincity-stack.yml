@@ -39,14 +39,19 @@ Resources:
     Properties:
       TableName: TBinCity
       AttributeDefinitions:
-        - AttributeName: buildingId
+        - AttributeName: key
           AttributeType: S        
       KeySchema:
-        - AttributeName: buildingId
+        - AttributeName: key
           KeyType: HASH
       ProvisionedThroughput:
-        ReadCapacityUnits: 1
-        WriteCapacityUnits: 1
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      GlobalSecondaryIndexes:
+        - IndexName: building-index
+          KeySchema:
+            - AttributeName: building
+              KeyType: Number
 
   # DynamoDB Role
   DynamoDbRole:
@@ -76,7 +81,9 @@ Resources:
                   - 'dynamodb:GetItem'
                   - 'dynamodb:Scan'
                   - 'dynamodb:DeleteItem'
-                Resource: !GetAtt TBinCity.Arn
+                Resource: 
+                  - 'arn:aws:dynamodb:*:*:table/TBinCity'
+                  - 'arn:aws:dynamodb:*:*:table/TBinCity/index/*'
 
   # Cognito SNS Role
   SNSRole:
@@ -242,14 +249,14 @@ Resources:
       FailOnWarnings: true
   
   # Gateway Resource
-  BuildingsApiResource:
+  ApartmentsApiResource:
     Type: 'AWS::ApiGateway::Resource'
     Properties:
       RestApiId: !Ref AppApi
       ParentId: !GetAtt 
         - AppApi
         - RootResourceId
-      PathPart: buildings
+      PathPart: apartments
 
   # API Authorizer
   ApiAuthorizer:
@@ -274,6 +281,7 @@ Resources:
         - Id: AssetsBucket
       WebsiteConfiguration:
         IndexDocument: index.html
+        ErrorDocument: index.html
 
   # Assets S3 Bucket Policy
   AssetsBucketPolicy:
@@ -286,9 +294,7 @@ Resources:
             Effect: Allow
             Resource: !Sub 'arn:aws:s3:::${AssetsBucket}/*'
             Principal:
-              AWS: !Sub >-
-                arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity
-                ${AssetsBucketOriginAccessIdentity}
+              AWS: !Sub 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity ${AssetsBucketOriginAccessIdentity}'
     DependsOn:
       - AssetsBucketOriginAccessIdentity
 
@@ -300,30 +306,39 @@ Resources:
         Comment: !Sub 'OriginAccessIdentity for ${AssetsBucket}'
 
   # Assets CloudFront Distribution
-  AssetsCDN:
-    Type: 'AWS::CloudFront::Distribution'
-    DependsOn:
-      - AssetsBucketOriginAccessIdentity
-    Properties:
-      DistributionConfig:
-        Enabled: true
-        Comment: !Sub 'CDN for ${AssetsBucket}'
-        DefaultRootObject: index.html
-        Origins:
-          - DomainName: !Join
-              - ''
-              - - !Sub '${AssetsBucket}.s3'
-                - !If [IADRegion, '', !Sub '-${AWS::Region}']
-                - '.amazonaws.com'
-            Id: S3
-            S3OriginConfig:
-              OriginAccessIdentity: !Sub >-
-                origin-access-identity/cloudfront/${AssetsBucketOriginAccessIdentity}
-        DefaultCacheBehavior:
-          TargetOriginId: S3
-          ViewerProtocolPolicy: https-only
-          ForwardedValues:
-            QueryString: 'false'
+  # AssetsCDN:
+  #   Type: 'AWS::CloudFront::Distribution'
+  #   DependsOn:
+  #     - AssetsBucketOriginAccessIdentity
+  #   Properties:
+  #     DistributionConfig:
+  #       Enabled: true
+  #       Comment: !Sub 'CDN for ${AssetsBucket}'
+  #       DefaultRootObject: index.html
+  #       Origins:
+  #         - DomainName: !Join
+  #             - ''
+  #             - - !Sub '${AssetsBucket}.s3'
+  #               - !If [IADRegion, '', !Sub '-${AWS::Region}']
+  #               - '.amazonaws.com'
+  #           Id: S3
+  #           S3OriginConfig:
+  #             OriginAccessIdentity: !Sub >-
+  #               origin-access-identity/cloudfront/${AssetsBucketOriginAccessIdentity}
+  #       DefaultCacheBehavior:
+  #         TargetOriginId: S3
+  #         ViewerProtocolPolicy: https-only
+  #         ForwardedValues:
+  #           QueryString: 'false'
+  #       CustomErrorResponses:
+  #         - ErrorCode: '404'
+  #           ResponsePagePath: '/index.html'
+  #           ResponseCode: '200'
+  #           ErrorCachingMinTTL: '30'
+  #         - ErrorCode: '403'
+  #           ResponsePagePath: '/index.html'
+  #           ResponseCode: '200'
+  #           ErrorCachingMinTTL: '30'
 
   # Lambda Functions S3 Bucket
   LambdaBucket:
@@ -526,8 +541,8 @@ Resources:
               commands:                
                 - echo Installing NPM dependencies...
                 - cd assets
-                - echo '{"region": "${AWS::Region}", "cognito": { "userPoolId": "${UserPool}", "clientId": "${UserPoolClient}", "identityPoolId": "${IdentityPool}"}, "gateway": {"url": "${BuildingsApiResource}"} }' > src/config.json
-                - npm install fibers node-sass sass redux typescript redux-thunk react-redux react-router-dom react-bootstrap bootstrap jquery --save
+                - echo '{"region": "${AWS::Region}", "cognito": { "userPoolId": "${UserPool}", "clientId": "${UserPoolClient}", "identityPoolId": "${IdentityPool}"}, "gateway": {"url": "https://${ApartmentsApiResource}.execute-api.${AWS:Region}.amazonaws.com/prod"} }' > src/config.json
+                - npm install fibers node-sass sass axios uuid redux typescript redux-thunk react-redux react-router-dom react-bootstrap bootstrap jquery --save
                 - npm install
             build:
               commands:
@@ -537,8 +552,7 @@ Resources:
                 - echo Uploading to AssetsBucket 
                 - aws s3 cp --recursive ./build s3://${AssetsBucket}/
                 - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/service-worker.js s3://${AssetsBucket}/
-                - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/index.html s3://${AssetsBucket}/
-                - aws cloudfront create-invalidation --distribution-id ${AssetsCDN} --paths /index.html /service-worker.js
+                - aws s3 cp --cache-control="max-age=0, no-cache, no-store, must-revalidate" ./build/index.html s3://${AssetsBucket}/                
       TimeoutInMinutes: 5
 
    # Functions CodeBuild Project
@@ -565,7 +579,13 @@ Resources:
                 nodejs: 10
             pre_build:
               commands:                                
-                - cd functions
+                - cd functions/listApartments
+                - npm install
+                - cd ../updateApartments
+                - npm install
+                - cd ../createApartments
+                - npm install
+                - cd ..
             build:
               commands:
                 - aws cloudformation package --template-file ./functions-stack.yml --output-template-file post-functions-stack.yml --s3-bucket ${LambdaBucket}
@@ -637,7 +657,7 @@ Resources:
                 ChangeSetName: !Sub '${ProjectName}-lambdas-changeset'
                 Capabilities: CAPABILITY_NAMED_IAM
                 TemplatePath: !Sub '${ProjectName}-Lambdas-BuildArtifact::post-functions-stack.yml'
-                ParameterOverrides: !Sub '{"DynamoDbRole": "${DynamoDbRole}", "ProjectName": "${ProjectName}", "UserPool": "${UserPool}", "AppApi": "${AppApi}", "ApiResource": "${BuildingsApiResource}"}'
+                ParameterOverrides: !Sub '{"DynamoDbRole": "${DynamoDbRole}", "ProjectName": "${ProjectName}", "UserPool": "${UserPool}", "AppApi": "${AppApi}", "ApiResource": "${ApartmentsApiResource}"}'
               RunOrder: 2
 
             - Name: execute-lambda-changeset
@@ -673,11 +693,11 @@ Resources:
     DependsOn:
       -  PipelineArtifactsBucket
 
-Outputs:  
-  WebApplication:
-    Description: The URL for the web application
-    Export:
-      Name: !Sub '${ProjectName}WebApp'
-    Value: !Sub 
-      - 'https://${Domain}'
-      - Domain: !GetAtt AssetsCDN.DomainName
+# Outputs:  
+#   WebApplication:
+#     Description: The URL for the web application
+#     Export:
+#       Name: !Sub '${ProjectName}WebApp'
+#     Value: !Sub 
+#       - 'https://${Domain}'
+#       - Domain: !GetAtt AssetsCDN.DomainName

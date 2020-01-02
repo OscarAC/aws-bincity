@@ -22,7 +22,7 @@ Amplify.configure({
     API: {
         endpoints: [
             {
-                name: "buildings",
+                name: "apartments",
                 endpoint: config.gateway.url,
                 region: config.region
             },

@@ -4,24 +4,35 @@ import Floor from './floor';
 
 class Building extends Component {
 
-    onClick = () => {        
-        this.props.onClick(this.props.model);
+    onClick = () => {
+        this.props.onClick(this.props.id);
+    }
+
+    renderFloors = (floorCount) => {
+
+        let floors = [];
+
+        for (let i = 0; i < floorCount; i++) {
+            floors.push(
+                <Floor key={i} id={i} apartments={this.props.apartments.filter(a=>a.floor == i)} onClick={this.onClick} />
+            );
+        }
+
+        return floors;
     }
 
     render() {
 
-        let floors = this.props.model.floors;
-        let alpha =  10 + 120 * this.props.model.buildingId;
-        let delta =  floors.length * 14;
+        let floorCount = this.props.apartments.length / 8;
+        let positionAlpha = 45 + 120 * this.props.id;
+        let positionDelta = floorCount * 14;
 
         return (
-            <React.Fragment>                
-                <div className='building' style={{left: alpha}}>
-                    <div className='base'></div>
-                    {floors.map((model, floor)=> {
-                        return <Floor key={floor} floor={floor} model={model} onClick={this.onClick} />
-                    })}                   
-                    <div className='roof' onClick={this.onClick} style={{top:delta, left: delta}}></div> 
+            <React.Fragment>
+                <div className='building' style={{left: positionAlpha}}>
+                    <div className={this.props.selected ? "base selected" : "base"}></div>
+                    {this.renderFloors(floorCount)}
+                    <div className="roof" onClick={this.onClick} style={{top:positionDelta, left: positionDelta}}></div> 
                 </div>
             </React.Fragment>
 

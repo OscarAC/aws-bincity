@@ -1,0 +1,53 @@
+.street {
+    position: absolute;
+    width: 100%;
+    height: 60px;
+    content: '';
+    top: 150px;
+    background-color: #b1b1b1;
+    border-top: 1px solid #7e7c7c;
+    border-bottom: 1px solid #636262;
+}
+
+.street .road {
+    position: absolute;
+    display: block;
+    opacity: 0.35;
+    width: 7px;
+    height: 3px;
+    top: 0;
+    left: 0;
+    content: '';
+    box-shadow: 10px 20px 0 0 rgb(255, 255, 255), 30px 20px 0 0 rgb(255, 255, 255), 50px 20px 0 0 rgb(255, 255, 255), 70px 20px 0 0 rgb(255, 255, 255), 90px 20px 0 0 rgb(255, 255, 255), 110px 20px 0 0 rgb(255, 255, 255), 130px 20px 0 0 rgb(255, 255, 255), 150px 20px 0 0 rgb(255, 255, 255), 170px 20px 0 0 rgb(255, 255, 255), 190px 20px 0 0 rgb(255, 255, 255), 210px 20px 0 0 rgb(255, 255, 255), 230px 20px 0 0 rgb(255, 255, 255), 250px 20px 0 0 rgb(255, 255, 255), 270px 20px 0 0 rgb(255, 255, 255), 290px 20px 0 0 rgb(255, 255, 255), 310px 20px 0 0 rgb(255, 255, 255), 330px 20px 0 0 rgb(255, 255, 255), 350px 20px 0 0 rgb(255, 255, 255), 370px 20px 0 0 rgb(255, 255, 255), 390px 20px 0 0 rgb(255, 255, 255), 410px 20px 0 0 rgb(255, 255, 255), 430px 20px 0 0 rgb(255, 255, 255), 450px 20px 0 0 rgb(255, 255, 255), 470px 20px 0 0 rgb(255, 255, 255), 490px 20px 0 0 rgb(255, 255, 255), 410px 20px 0 0 rgb(255, 255, 255), 430px 20px 0 0 rgb(255, 255, 255), 10px 40px 0 0 rgb(255, 255, 255), 30px 40px 0 0 rgb(255, 255, 255), 50px 40px 0 0 rgb(255, 255, 255), 70px 40px 0 0 rgb(255, 255, 255), 90px 40px 0 0 rgb(255, 255, 255), 110px 40px 0 0 rgb(255, 255, 255), 130px 40px 0 0 rgb(255, 255, 255), 150px 40px 0 0 rgb(255, 255, 255), 170px 40px 0 0 rgb(255, 255, 255), 190px 40px 0 0 rgb(255, 255, 255), 210px 40px 0 0 rgb(255, 255, 255), 230px 40px 0 0 rgb(255, 255, 255), 250px 40px 0 0 rgb(255, 255, 255), 270px 40px 0 0 rgb(255, 255, 255), 290px 40px 0 0 rgb(255, 255, 255), 310px 40px 0 0 rgb(255, 255, 255), 330px 40px 0 0 rgb(255, 255, 255), 350px 40px 0 0 rgb(255, 255, 255), 370px 40px 0 0 rgb(255, 255, 255), 390px 40px 0 0 rgb(255, 255, 255), 410px 40px 0 0 rgb(255, 255, 255), 430px 40px 0 0 rgb(255, 255, 255), 450px 40px 0 0 rgb(255, 255, 255), 470px 40px 0 0 rgb(255, 255, 255), 490px 40px 0 0 rgb(255, 255, 255), 410px 40px 0 0 rgb(255, 255, 255), 430px 40px 0 0 rgb(255, 255, 255);
+}
+
+.street .car {
+
+    position: relative;
+
+    top: 6px;
+    width: 8px;
+    height: 5px;
+
+    background-color: #636262;
+    
+    content: '';
+
+    animation-duration: 10s;
+    animation-name: carMove;
+    animation-iteration-count: 1;
+    animation-timing-function: ease-in-out;
+    animation-delay: 10s;
+}
+
+@keyframes carMove {
+    0% {
+        left: 1%;
+    }
+    60% {
+        left: 60%;
+    }
+    100% {
+        left: 98%;
+    }
+}

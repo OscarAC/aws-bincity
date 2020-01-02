@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Route, Switch, withRouter, Redirect } from "react-router-dom";
+import { Route, Switch } from "react-router-dom";
 import { Form, Nav, Navbar, Button } from "react-bootstrap";
 import Init from './components/init';
 import NotFound from './components/notfound';
@@ -38,7 +38,7 @@ class App extends Component {
           <Navbar.Toggle />
           <Navbar.Collapse>
             <Nav className="ml-auto">
-              {this.props.isAuthenticated ? this.showLoggedInBar() : this.showLoggedOutBar()}
+              {this.props.authenticated ? this.showLoggedInBar() : this.showLoggedOutBar()}
             </Nav>
           </Navbar.Collapse>
         </Navbar>
@@ -54,7 +54,7 @@ class App extends Component {
 }
 
 const mapStateToProps = state => ({
-  isAuthenticated: state.auth.isAuthenticated  
+  authenticated: state.auth.authenticated
 })
 
 const mapDispatchToProps = dispatch => ({

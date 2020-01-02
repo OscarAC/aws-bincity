@@ -4,11 +4,15 @@
     background-color: transparent;
     width: 50px;
     height: 50px;
-    bottom: 10px;
-    left: 10px;    
+    bottom: 75%;    
     content: '';
     transform: rotateZ(-90deg);
     z-index: 1;    
+}
+
+.selected {
+    box-shadow: 0 0 0 3.5px #b85f37;
+    border: 0px !important;
 }
 
 .building .base {

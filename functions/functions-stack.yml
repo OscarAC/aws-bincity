@@ -6,10 +6,7 @@ Parameters:
         Type: "String"
     DynamoDbRole:
         Description: "DynamoDB Role ARN to assign to functions"
-        Type: "String"    
-    # TableName:
-    #     Description: "DynamoDB Table Name"
-    #     Type: "String"
+        Type: "String"        
     UserPool:
         Description: "Cognito UserPool ARN"
         Type: "String"
@@ -21,18 +18,19 @@ Parameters:
         Type: "String"
 
 Resources:
-  ListBuildings:
+  ListApartments:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: ListBuildings.handler
+      Handler: listApartments.handler
+      CodeUri: listApartments/      
       Runtime: nodejs8.10
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${DynamoDbRole}
 
-  ListBuildingsPermissions:
+  ListApartmentsPermissions:
     Type: 'AWS::Lambda::Permission'
     Properties:
       Action: 'lambda:InvokeFunction'
-      FunctionName: !Ref ListBuildings
+      FunctionName: !Ref ListApartments
       Principal: apigateway.amazonaws.com
       SourceArn: !Join 
         - ''
@@ -44,18 +42,19 @@ Resources:
           - !Ref AppApi
           - /*
 
-  UpdateBuilding:
+  UpdateApartments:
     Type: AWS::Serverless::Function
     Properties:
-      Handler: UpdateBuilding.handler
+      Handler: updateApartments.handler
+      CodeUri: updateApartments/
       Runtime: nodejs8.10
       Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${DynamoDbRole}
 
-  UpdateBuildingPermissions:
+  UpdateApartmentsPermissions:
     Type: 'AWS::Lambda::Permission'
     Properties:
       Action: 'lambda:InvokeFunction'
-      FunctionName: !Ref UpdateBuilding
+      FunctionName: !Ref UpdateApartments
       Principal: apigateway.amazonaws.com
       SourceArn: !Join 
         - ''
@@ -67,9 +66,33 @@ Resources:
           - !Ref AppApi
           - /*
 
-  BuildingsApiRequestGET:
+  CreateApartments:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: createApartments.handler
+      CodeUri: createApartments/      
+      Runtime: nodejs8.10
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${DynamoDbRole}
+
+  CreateApartmentsPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref CreateApartments
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+
+  ApartmentsApiRequestGET:
     DependsOn:
-      - ListBuildingsPermissions
+      - ListApartmentsPermissions
     Type: 'AWS::ApiGateway::Method'
     Properties:
       AuthorizationType: AWS_IAM
@@ -83,8 +106,8 @@ Resources:
             - !Ref 'AWS::Region'
             - ':lambda:path/2015-03-31/functions/'
             - !GetAtt 
-              - ListBuildings
-              - Arn
+              - ListApartments
+              - Arn              
             - /invocations
         IntegrationResponses:
           - StatusCode: 200
@@ -95,7 +118,7 @@ Resources:
           ResponseModels:
             application/json: Empty
 
-  BuildingsApiRequestPUT:
+  ApartmentsApiRequestPUT:
     Type: 'AWS::ApiGateway::Method'
     Properties:
       AuthorizationType: AWS_IAM
@@ -109,7 +132,35 @@ Resources:
             - !Ref 'AWS::Region'
             - ':lambda:path/2015-03-31/functions/'
             - !GetAtt 
-              - UpdateBuilding
+              - UpdateApartments
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.path.id: true
+      ResourceId: !Ref ApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
+  
+  ApartmentsApiRequestPOST:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: POST
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - CreateApartments
               - Arn
             - /invocations
         IntegrationResponses:
@@ -123,14 +174,13 @@ Resources:
           ResponseModels:
             application/json: Empty
 
-
-  
-  # APIDeployment:
-  #   DependsOn:
-  #     - BuildingsApiRequestGET
-  #     - BuildingsApiRequestPUT      
-  #   Type: 'AWS::ApiGateway::Deployment'
-  #   Properties:
-  #     Description: Prod deployment for API
-  #     RestApiId: !Ref AppApi
-  #     StageName: prod
+  APIDeployment:
+    DependsOn:
+      - ApartmentsApiRequestGET      
+      - ApartmentsApiRequestPOST
+      - ApartmentsApiRequestGET      
+    Type: 'AWS::ApiGateway::Deployment'
+    Properties:
+      Description: Prod deployment for API
+      RestApiId: !Ref AppApi
+      StageName: prod

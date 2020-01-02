@@ -2,3 +2,11 @@
 - Remove floor
 - letters in buildings
 - floor click to create new building
+
+- RM:
+    + about react & cloudfront
+
+- Fetch buildings error
+- Tidy-up cityActions
+- Inital -brandy new- state
+- influx retentions

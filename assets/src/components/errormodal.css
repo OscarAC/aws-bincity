@@ -1,0 +1,18 @@
+.errormodal *{
+    font-size: 12px;
+}
+
+.errormodal .button {
+    background-color: transparent !important;
+    border-color: #79503a;
+    color: #79503a;
+    padding: 3px;
+    font-size: 12px;
+    box-shadow: 0;
+}
+
+.errormodal .button:hover {
+    background-color: #eedfd7 !important;
+    border-color: #79503a;
+    color: #79503a;
+}

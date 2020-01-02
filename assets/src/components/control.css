@@ -1,17 +1,66 @@
-
 .control {
-    width: 500px;
-    height: 50px;    
-    overflow-x: hidden;
-    overflow-y: auto;
+    position: absolute;
+    width: 100%;
+    height: calc(100vh - 100px);
     border-radius: 8px;
-    scrollbar-color: #b76538 white;
     z-index: 100;
+    background-color: #fce3cc;
+    font-size: 12px;
 }
 
-.control section {    
+.control section {
     height: 49px;
     display: flex;
     justify-content: center;
     align-items: center;
+}
+
+.control .floors {
+    height: calc(100vh - 250px);
+    scrollbar-color: #b76538 white;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.control .button {
+    background-color: transparent !important;
+    border-color: #79503a;
+    color: #79503a;
+    padding: 3px;
+    font-size: 12px;
+    box-shadow: 0;
+}
+
+.control .button:hover {
+    background-color: #eedfd7 !important;
+    border-color: #79503a;
+    color: #79503a;
+}
+
+.control .button:hover:disabled {
+    background-color: transparent !important;
+    border-color: #79503a;
+    color: #79503a;
+}
+
+.control .save {
+    width: 95%;
+}
+
+.control .loading {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    content: '';
+    background-color: #cfbeae;
+    opacity: 0.35;
+}
+
+.control .separator {
+    border-bottom: 1px dotted brown;
+    width: 95%;
+}
+
+.control .errorMessage {
+    color: rgb(177, 33, 33);
 }

@@ -1,11 +1,11 @@
 import React, { Component } from "react";
-import { Form, FormGroup, FormControl, FormLabel, Button, Spinner, FormControlProps } from "react-bootstrap";
+import { Form, FormGroup, FormControl, FormLabel, Button, Spinner } from "react-bootstrap";
 import { connect } from 'react-redux';
 import * as Actions from '../actions/authActions';
 import { bindActionCreators } from 'redux';
 import { Redirect } from 'react-router';
 import './login.css';
-import { emailRegex } from '../actions/util';
+import { emailRegex } from '../util';
 
 class Login extends Component {
 

@@ -15,7 +15,7 @@ class Init extends Component {
         )
     }
 
-    render() {        
+    render() {                
         return ( this.props.authenticated ? <City /> : this.renderInit());
     }
 }

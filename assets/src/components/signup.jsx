@@ -3,11 +3,9 @@ import { connect } from 'react-redux';
 import * as Actions from '../actions/signupActions';
 import { bindActionCreators } from 'redux';
 import { Redirect } from 'react-router';
-import { Form, FormGroup, FormControl, FormLabel, Button, Spinner, FormControlProps } from 'react-bootstrap';
-import { ISignUpResult } from 'amazon-cognito-identity-js';
-import { emailRegex } from '../actions/util';
+import { Form, FormGroup, FormControl, FormLabel, Button, Spinner } from 'react-bootstrap';
+import { emailRegex } from '../util';
 import './signup.css';
-import { ConsoleLogger } from "@aws-amplify/core";
 
 class SignUp extends Component {
 
@@ -49,21 +47,16 @@ class SignUp extends Component {
 
     onConfirm = (event) => {
         event.preventDefault();
-        // this.setState({ loading: true });
+        
+        if (event.currentTarget.checkValidity()) {
+            event.preventDefault();
+            event.stopPropagation();
 
-        // try {
-        //   await Auth.confirmSignUp(this.state.email, this.state.confirmationCode);
-        //   await Auth.signIn(this.state.email, this.state.password);
-        //   this.props.userHasAuthenticated(true);
-        //   this.setState({ redirect: true })
-        // } catch (e) {
-        //   alert(e.message);
-        //   this.setState({ loading: false });
-        // }
+            this.props.actions.confirm(this.state.email, this.state.confirmationCode);
+        }
     }
 
-    showConfirmationForm = () => {
-        // if (this.state.redirect) return <Redirect to='/' />
+    showConfirmationForm = () => {        
         const { confirmationCode } = this.state;
 
         return (
@@ -119,12 +112,12 @@ class SignUp extends Component {
     render() {
         console.log('rendering signup');
 
-        if (this.props.user != undefined && this.props.confirmed)
-            return <Redirect to='/' />
+        if (this.props.user !== undefined && this.props.confirmed)
+            return <Redirect to='/login' />
 
         return (
             <div className="signup">
-                {this.state.user === undefined ? this.showSignupForm() : this.showConfirmationForm()}
+                {this.props.user === undefined ? this.showSignupForm() : this.showConfirmationForm()}
             </div>
         );
     }

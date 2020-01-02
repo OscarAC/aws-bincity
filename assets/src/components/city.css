@@ -1,18 +1,13 @@
 .city {
-    position: absolute;
+    position: static;
     width: 500px;
-    height: 500px;
-    background-color: #f7d8bd;    
-    
-    top: 22%;
-    left: 20.5%;
-
-    transform: rotate(-30deg) skewX(25deg) translate(0,0);
+    height: 300px;
+    background-color: #f7d8bd;
+    margin-top: 30vh;
+    transform: rotate(-30deg) skewX(25deg) translate(0, 0);
     /* transform: translate(0,0); */
     /* transform: rotateZ(-135deg) translate(0,0) skewX(25deg); */
-
-    box-shadow: -20px 20px 10px rgba(0,0,0,0.5);
-
+    box-shadow: -20px 20px 10px rgba(0, 0, 0, 0.5);
     content: ''
 }
 
@@ -24,29 +19,24 @@
 }
 
 .city:before {
-
     position: absolute;
     top: 10px;
     left: -20px;
     height: 100%;
     width: 20px;
     background: #b1b1b1;
-
     transform: rotate(0deg) skewY(-45deg);
-
     content: '';
 }
 
 .city:after {
-
     position: absolute;
     bottom: -20px;
     left: -10px;
     height: 20px;
     width: 100%;
     background: #b1b1b1;
-
     transform: rotate(0deg) skewX(-45deg);
-
     content: '';
 }
+

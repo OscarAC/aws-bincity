@@ -1,74 +1,134 @@
 import React, { Component } from "react";
 import './control.css';
 import { connect } from 'react-redux';
-import { fetchCurrentBuilding, updateCurrentBuilding } from '../actions/cityActions';
-import PropTypes from 'prop-types';
+import * as Actions from '../actions/cityActions';
+import { bindActionCreators } from 'redux';
+import { Button, Spinner } from "react-bootstrap";
+import * as Util from '../util';
 
 class Control extends Component {
 
-    constructor(props) {
 
-        super(props);
+    onRealTimeChange = (event) => {
 
-        this.props.fetchCurrentBuilding();
+        this.props.actions.setRealTime(event.target.checked);
     }
 
-    onApartmentClick = (floor, apartment, value) => {
+    onSaveClick = () => {
 
-        this.props.building.floors[floor][apartment] = value ? 1 : 0;        
-        this.props.updateCurrentBuilding(this.props.building);       
+        this.props.actions.save(this.props.apartments);
+    }
+
+    onApartmentClick = (key, value) => {
+        
+        let apartment = this.props.apartments.find(a=>a.key ==key);
+        apartment.value = value ? 1 : 0;
+        apartment.dirty = !apartment.dirty;
+
+        this.props.actions.updateApartments(this.props.apartments);
     }
 
     onNewFloorClick = () => {
 
-        this.props.building.floors.push([0,0,0,0,0,0,0,0]);        
-        this.props.updateCurrentBuilding(this.props.building);        
-    }   
+        let floorCount = this.props.currentApartments.length / 8;
+        if (floorCount < 16) {
+            
+            this.props.actions.requestNewFloor(this.props.apartments, this.props.building);            
+        }
+    }
 
-    render() {
+    onDeleteFloorClick = () => {
+    }
 
-        console.log('rendering control');
 
-        const sections = [];
-        for (let floor = this.props.building.floors.length - 1; floor >= 0; floor--) {
+
+    renderSections = () => {
+
+        let sections = [];
+
+        for (let i = 0; i < this.props.currentApartments.length / 8; i++) {
+
             sections.push(
-                <section key={floor}>
-                    <div>{floor}</div>
+                <section key={this.props.building + '' + i}>
+                    <div>{i}</div>
                     <div>
-                        {                            
-                            this.props.building.floors[floor].reverse().map((windows, apartment) => {                                
-                                return (<input key={floor+''+apartment}
+
+                        {this.props.currentApartments.filter(a => a.floor == i)
+                            .map(a => {
+                                let id = this.props.building + '' + i + '' + a.apartment;
+                                return (<input key={a.key} id={id}
                                     type="checkbox"
-                                    defaultChecked={windows > 0}
-                                    onClick={(e) => this.onApartmentClick(floor, apartment, e.target.checked)}>
+                                    defaultChecked={a.value > 0}
+                                    onClick={(e) => this.onApartmentClick(a.key, e.target.checked)}>
                                 </input>)
                             })
                         }
                     </div>
                 </section>
-            )
-        };
+            );
+        }
+
+        return sections;
+    }
+
+    renderControls = () => {
+        return (
+            <div>
+                <div>
+                    <div>
+                        <section>
+                            <Button className='button save' onClick={this.onSaveClick} disabled={this.props.realtime || !this.props.dirty} >
+                                {this.props.loading ?
+                                    <span><Spinner size="sm" animation="border" className="mr-2" />Saving</span> :
+                                    <span>Save</span>}
+                            </Button>
+                        </section>
+                        <div className="errorMessage">
+                            <span>{this.props.error ? this.props.errorMessage : ""}</span>
+                        </div>
+                        <section>
+                            <div><input type="checkbox" onChange={this.onRealTimeChange} checked={this.props.realtime}></input> &nbsp;</div><div>  Real-time save</div>
+                        </section>
+                    </div>
+                    <div className="separator"></div>
+                    <section>
+                        <div><Button className='button' onClick={this.onNewFloorClick}>new floor</Button> </div>
+                        <div><Button className='button' onClick={this.onDeleteFloorClick}>delete floor</Button></div>
+                    </section>
+                </div>
+
+                <div className="floors">
+                    {this.renderSections()}
+                </div>
+            </div>
+        )
+    }
+
+    render() {
 
         return (
-            <React.Fragment>
-                <div className="control">
-                    <section>
-                        <button onClick={this.onNewFloorClick}>new floor</button>
-                    </section>
-                    {sections}
-                </div>
-            </React.Fragment>
+            <div className="control">
+                {this.props.loading ? <div className="loading"></div> : ""}
+                {this.renderControls()}
+            </div>
         );
     }
 }
 
-Control.propTypes = {
-    fetchCurrentBuilding: PropTypes.func.isRequired,
-    building: PropTypes.object.isRequired
-}
-
 const mapStateToProps = state => ({
-    building: state.buildings.building
+    apartments: state.apartments.apartments,
+    currentApartments: state.apartments.apartments.filter(a => a.building == state.apartments.building),
+    building: state.apartments.building,
+    dirty: state.apartments.dirty,
+    realtime: state.apartments.realtime,
+    loading: state.apartments.saveLoading,
+    error: state.apartments.saveError,
+    errorMessage: state.apartments.errorMessage
 });
 
-export default connect(mapStateToProps, { fetchCurrentBuilding, updateCurrentBuilding })(Control);
+
+const mapDispatchToProps = dispatch => ({
+    actions: bindActionCreators(Actions, dispatch)
+})
+
+export default connect(mapStateToProps, mapDispatchToProps)(Control);

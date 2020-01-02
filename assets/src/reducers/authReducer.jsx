@@ -1,7 +1,7 @@
 import { FETCH_AUTH, LOGIN_STARTED, LOGIN_SUCCESS, LOGIN_ERROR, LOGOUT } from '../actions/types';
 
 const initialState = {
-    authenticated: false,
+    authenticated: true,
     error: false,
     errorMessage: '',
     loading: false
@@ -41,6 +41,15 @@ export default function (state = initialState, action) {
                 authenticated: false,
                 error: true,
                 errorMessage: action.errorMessage,
+                loading: false
+            }
+
+        case LOGOUT:
+            return {
+                ...state,
+                authenticated: false,
+                error: false,
+                errorMessage: '',
                 loading: false
             }
 
