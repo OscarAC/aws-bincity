@@ -1,11 +1,24 @@
 const AWS = require('aws-sdk');
 const dynamoDB = new AWS.DynamoDB.DocumentClient();
-let constants = require('./constants');
+const uuid = require('uuid');
 
 const headers = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Credentials": true
 };
+
+function emptyFloor(building, floor) {
+  return [
+      { key: uuid.v4(), apartment: 0, value: 0, floor: floor, building: building },
+      { key: uuid.v4(), apartment: 1, value: 0, floor: floor, building: building },
+      { key: uuid.v4(), apartment: 2, value: 0, floor: floor, building: building },
+      { key: uuid.v4(), apartment: 3, value: 0, floor: floor, building: building },
+      { key: uuid.v4(), apartment: 4, value: 0, floor: floor, building: building },
+      { key: uuid.v4(), apartment: 5, value: 0, floor: floor, building: building },
+      { key: uuid.v4(), apartment: 6, value: 0, floor: floor, building: building },
+      { key: uuid.v4(), apartment: 7, value: 0, floor: floor, building: building }
+  ]
+}
 
 exports.handler = (event, context, callback) => {
 
@@ -17,17 +30,17 @@ exports.handler = (event, context, callback) => {
    * Verify building parameter has been sent and
    * is a numberic value, if not, then send erro 400 (invalid request)
    */
-  if (isNumber(buildingNumber)) {
-    buildingNumber = parseInt(buildingNumber);
-  }
-  else {
-
+  if (buildingNumber === undefined) {
+    
     callback(null, {
       statusCode: 400,
       headers: headers,
       body: null
     });
     return;
+  }
+  else {
+    buildingNumber = parseInt(buildingNumber);    
   }
 
   /**
@@ -82,11 +95,10 @@ exports.handler = (event, context, callback) => {
 
   else {
 
-    let newFloor = constants.emptyFloor(building, currentApartmentCount);
+    let newFloor = emptyFloor(buildingNumber, currentApartmentCount);
     let requestItems = [];
 
-    newFloor.forEarch(item => {
-
+    Array.prototype.forEach.call(newFloor, item=>{
       requestItems.push({
         PutRequest: {
           Item: {

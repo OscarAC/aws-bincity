@@ -88,6 +88,9 @@ Resources:
                   - 'dynamodb:GetItem'
                   - 'dynamodb:Scan'
                   - 'dynamodb:DeleteItem'
+                  - 'dynamodb:BatchGetItem'
+                  - 'dynamodb:BatchWriteItem'
+                  - 'dynamodb:BatchPutItem'
                 Resource: 
                   - 'arn:aws:dynamodb:*:*:table/TBinCity'
                   - 'arn:aws:dynamodb:*:*:table/TBinCity/index/*'
@@ -548,7 +551,7 @@ Resources:
               commands:                
                 - echo Installing NPM dependencies...
                 - cd assets
-                - echo '{"region":"${AWS::Region}","cognito":{"userPoolId":"${UserPool}","clientId":"${UserPoolClient}","identityPoolId":"${IdentityPool}"},"gateway":{"url":"https://${${AppApi}}.execute-api.${AWS::Region}.amazonaws.com/prod"}}' > src/config.json
+                - echo '{"region":"${AWS::Region}","cognito":{"userPoolId":"${UserPool}","clientId":"${UserPoolClient}","identityPoolId":"${IdentityPool}"},"gateway":{"url":"https://${AppApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"}}' > src/config.json
                 - npm install fibers node-sass sass axios uuid redux typescript redux-thunk react-redux react-router-dom react-bootstrap bootstrap jquery --save
                 - npm install
             build:

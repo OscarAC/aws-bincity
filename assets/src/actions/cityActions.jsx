@@ -27,9 +27,17 @@ export const fetchApartments = () => dispatch => {
     API.get("apartments", "apartments", null)
         .then(res => {
 
+            console.log(res.data);
+
+            let apartments = res.data;
+
+            if(apartments === undefined){
+                apartments = [];
+            }
+
             dispatch({
                 type: FETCH_APARTMENTS_SUCCESS,
-                apartments: res.data,
+                apartments: apartments,
                 building: 0
             });
         })
@@ -59,7 +67,7 @@ export const requestNewFloor = (apartments, building) => dispatch => {
 
     dispatch({ type: APARTMENTS_NEWFLOOR_STARTED });
 
-    API.post("apartments", "/apartments", {
+    API.post("apartments", "apartments", {
 
         body: {
             building: building
@@ -89,7 +97,7 @@ export const save = (apartments) => dispatch => {
 
     dispatch({ type: APARTMENTS_SAVE_STARTED });
 
-    API.put("apartments", "/apartments", {
+    API.put("apartments", "apartments", {
         
         body: {
             apartments: apartments.filter(a => a.dirty).map(a => {

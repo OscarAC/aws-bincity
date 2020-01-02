@@ -11,7 +11,7 @@ exports.handler = (event, context, callback) => {
 
   const data = JSON.parse(event.body);
 
-  let apartments = data.apartments;
+  let apartments = body.apartments;
   let requestItems = [];
 
   apartments.forEach(item => {
