@@ -6,15 +6,15 @@ Parameters:
         Type: "String"
     DynamoDbRole:
         Description: "DynamoDB Role ARN to assign to functions"
-        Type: "String"        
-    UserPool:
-        Description: "Cognito UserPool ARN"
-        Type: "String"
+        Type: "String"           
     AppApi:
         Description: "Gateway API"
         Type: "String"
     ApiResource:
         Description: "API Resource"
+        Type: "String"
+    StreamArn:
+        Description: "DynamoDB Stream ARN"
         Type: "String"
 
 Resources:
@@ -268,3 +268,21 @@ Resources:
       Description: Prod deployment for API
       RestApiId: !Ref AppApi
       StageName: prod
+
+  StreamReader:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: streamReader.handler
+      CodeUri: streamReader/
+      Runtime: nodejs8.10
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${DynamoDbRole}
+
+  DataTableStream:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      BatchSize: 100
+      Enabled: True
+      EventSourceArn:
+        Fn::Ref: StreamArn
+        Fn::GetAtt: [ StreamReader , Arn ]
+      StartingPosition: LATEST

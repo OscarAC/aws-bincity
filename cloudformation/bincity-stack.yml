@@ -64,6 +64,8 @@ Resources:
           ProvisionedThroughput:
             ReadCapacityUnits: 5
             WriteCapacityUnits: 5
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
 
   # DynamoDB Role
   DynamoDbRole:
@@ -96,9 +98,15 @@ Resources:
                   - 'dynamodb:BatchGetItem'
                   - 'dynamodb:BatchWriteItem'
                   - 'dynamodb:BatchPutItem'
+                  - 'dynamodb:DescribeStream'
+                  - 'dynamodb:GetRecords'
+                  - 'dynamodb:GetShardIterator'
+                  - 'dynamodb:ListStreams'
+                  - 'dynamodb:DescribeStream'                  
                 Resource: 
                   - 'arn:aws:dynamodb:*:*:table/TBinCity'
                   - 'arn:aws:dynamodb:*:*:table/TBinCity/index/*'
+                  - 'arn:aws:dynamodb:*:*:table/TBinCity/stream/*'
 
   # Cognito SNS Role
   SNSRole:
@@ -613,7 +621,9 @@ Resources:
                 - npm install
                 - cd ../createApartments
                 - npm install
-                - CD ../deleteApartments
+                - cd ../deleteApartments
+                - npm install
+                - cd ../streamReader
                 - npm install
                 - cd ..
             build:
@@ -687,7 +697,7 @@ Resources:
                 ChangeSetName: !Sub '${ProjectName}-lambdas-changeset'
                 Capabilities: CAPABILITY_NAMED_IAM
                 TemplatePath: !Sub '${ProjectName}-Lambdas-BuildArtifact::post-functions-stack.yml'
-                ParameterOverrides: !Sub '{"DynamoDbRole": "${DynamoDbRole}", "ProjectName": "${ProjectName}", "UserPool": "${UserPool}", "AppApi": "${AppApi}", "ApiResource": "${ApartmentsApiResource}"}'
+                ParameterOverrides: !Sub '{"DynamoDbRole": "${DynamoDbRole}", "ProjectName": "${ProjectName}", "AppApi": "${AppApi}", "ApiResource": "${ApartmentsApiResource}", "StreamArn": "$(Fn::GetAtt:[TBinCity, StreamArn])"}'
               RunOrder: 2
 
             - Name: execute-lambda-changeset
