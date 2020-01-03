@@ -4,7 +4,6 @@ import { connect } from 'react-redux';
 import * as Actions from '../actions/cityActions';
 import { bindActionCreators } from 'redux';
 import { Button, Spinner } from "react-bootstrap";
-import * as Util from '../util';
 
 class Control extends Component {
 
@@ -87,9 +86,9 @@ class Control extends Component {
                         <div className="errorMessage">
                             <span>{this.props.error ? this.props.errorMessage : ""}</span>
                         </div>
-                        <section>
+                        {/* <section>
                             <div><input type="checkbox" onChange={this.onRealTimeChange} checked={this.props.realtime}></input> &nbsp;</div><div>  Real-time save</div>
-                        </section>
+                        </section> */}
                     </div>
                     <div className="separator"></div>
                     <section>

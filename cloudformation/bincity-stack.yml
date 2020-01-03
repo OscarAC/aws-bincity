@@ -10,10 +10,10 @@ Parameters:
     AllowedPattern: "^[a-z]{1,12}"
     ConstraintDescription: The ProjectName can by up to 12 characters, lowercase letters (a-z) only.
   AdminUserEmail:
-     Description: E-mail of the administrator account to be created.
-     Type: String
-     AllowedPattern: "/[^\s@]+@[^\s@]+\.[^\s@]+/"
-     ConstraintDescription: The AdminUserEmail must be a valid e-mail format.
+    Description: E-mail of the administrator account to be created.
+    Type: String
+    AllowedPattern: "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"
+    ConstraintDescription: The AdminUserEmail must be a valid e-mail format.
   GitHubOAuthToken:
     Type: String
     NoEcho: true
@@ -266,7 +266,7 @@ Resources:
       ForceAliasCreation: false
       UserAttributes:
       - Name: email
-        Value: ${self:custom.systemUserEmail}      
+        Value: !Ref AdminUserEmail    
 
   # Gateway API
   AppApi:
@@ -612,6 +612,8 @@ Resources:
                 - cd ../updateApartments
                 - npm install
                 - cd ../createApartments
+                - npm install
+                - CD ../deleteApartments
                 - npm install
                 - cd ..
             build:

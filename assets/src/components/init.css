@@ -1,17 +1,21 @@
-.errormodal *{
-    font-size: 12px;
+.init {
+    position: absolute;
+    margin-top: 25px;
+    width: 100%;
+    text-align: center;    
 }
 
-.errormodal .button {
+.init .button {
     background-color: transparent !important;
     border-color: #79503a;
     color: #79503a;
-    padding: 3px;
-    font-size: 12px;
+    padding: 5px;
+    font-size: 14px;
     box-shadow: 0;
+    width: 125px;
 }
 
-.errormodal .button:hover {
+.init .button:hover {
     background-color: #eedfd7 !important;
     border-color: #79503a;
     color: #79503a;

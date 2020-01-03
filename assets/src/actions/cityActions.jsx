@@ -10,7 +10,11 @@ import {
     APARTMENTS_SAVE_ERROR,
     APARTMENTS_NEWFLOOR_STARTED,
     APARTMENTS_NEWFLOOR_SUCCESS,
-    APARTMENTS_NEWFLOOR_ERROR
+    APARTMENTS_NEWFLOOR_ERROR,
+    APARTMENTS_DELETE_STARTED,
+    APARTMENTS_DELETE_SUCCESS,
+    APARTMENTS_DELETE_ERROR
+    
 } from './types';
 
 import API from "@aws-amplify/api";
@@ -61,7 +65,14 @@ export const setRealTime = (value) => dispatch => {
     });
 }
 
-export const requestNewFloor = (apartments, building) => dispatch => {
+/**
+ * Requests new set of apartments of a new floor for a building
+ * The floor number will be decided by the back end
+ * and returned with its unique identifiers
+ * 
+ * @param {*} building
+ */
+export const requestNewFloor = (building) => dispatch => {
 
     dispatch({ type: APARTMENTS_NEWFLOOR_STARTED });
 
@@ -121,6 +132,44 @@ export const save = (apartments) => dispatch => {
         dispatch({
             type: APARTMENTS_SAVE_ERROR,
             errorMessage: "Oops! error saving: " + err.message
+        });
+    });
+}
+
+
+/**
+ * Deletes the top floor of a building, similar to pop from a stack
+ * 
+ * @param {*} apartments
+ * @param {*} building 
+ */
+export const deleteFloor = (apartments, building) => dispatch => {
+
+    dispatch({ type: APARTMENTS_DELETE_STARTED });
+
+    API.delete("apartments", "apartments", {
+
+        body: {
+            apartments: apartments
+            .filter(a=>a.building===building)
+            .sort((a,b)=>a.floor > b.floor)
+            .slice(0,8)
+        }
+
+    }).then(res => {
+        
+        let floor = res.floor;                
+        
+        dispatch({
+            type: APARTMENTS_DELETE_SUCCESS,
+            apartments: apartments.filter(a=>a.floor !== floor)
+        });
+
+    }).catch(err => {
+
+        dispatch({
+            type: APARTMENTS_DELETE_ERROR,
+            errorMessage: "Oops! error deleting the floor: " + err.message
         });
     });
 }

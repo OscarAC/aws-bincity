@@ -10,7 +10,10 @@ import {
     UPDATE_APARTMENTS_STATE,
     APARTMENTS_NEWFLOOR_STARTED,
     APARTMENTS_NEWFLOOR_SUCCESS,
-    APARTMENTS_NEWFLOOR_ERROR
+    APARTMENTS_NEWFLOOR_ERROR,
+    APARTMENTS_DELETE_STARTED,
+    APARTMENTS_DELETE_SUCCESS,
+    APARTMENTS_DELETE_ERROR
 } from '../actions/types';
 
 const initialState = {
@@ -109,6 +112,28 @@ export default function (state = initialState, action) {
             }
 
         case APARTMENTS_NEWFLOOR_ERROR:
+            return {
+                ...state,
+                saveLoading: false,
+                dirty: true,
+                saveError: true,
+                errorMessage: action.errorMessage
+            }
+
+        case APARTMENTS_DELETE_STARTED:
+            return {
+                ...state,
+                saveLoading: true
+            }
+
+        case APARTMENTS_DELETE_SUCCESS:
+            return {
+                ...state,
+                saveLoading: false,
+                apartments: action.apartments
+            }
+        
+            case APARTMENTS_DELETE_ERROR:
             return {
                 ...state,
                 saveLoading: false,

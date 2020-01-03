@@ -90,6 +90,30 @@ Resources:
           - !Ref AppApi
           - /*
 
+  DeleteApartments:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: deleteApartments.handler
+      CodeUri: deleteApartments/      
+      Runtime: nodejs8.10
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${DynamoDbRole}
+
+  DeleteApartmentsPermissions:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      Action: 'lambda:InvokeFunction'
+      FunctionName: !Ref DeleteApartments
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Join 
+        - ''
+        - - 'arn:aws:execute-api:'
+          - !Ref 'AWS::Region'
+          - ':'
+          - !Ref 'AWS::AccountId'
+          - ':'
+          - !Ref AppApi
+          - /*
+
   ApartmentsApiRequestGET:
     DependsOn:
       - ListApartmentsPermissions
@@ -173,6 +197,34 @@ Resources:
         - StatusCode: 200
           ResponseModels:
             application/json: Empty
+  
+  ApartmentsApiRequestDELETE:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      AuthorizationType: AWS_IAM
+      HttpMethod: DELETE
+      Integration:
+        Type: AWS_PROXY
+        IntegrationHttpMethod: POST
+        Uri: !Join 
+          - ''
+          - - 'arn:aws:apigateway:'
+            - !Ref 'AWS::Region'
+            - ':lambda:path/2015-03-31/functions/'
+            - !GetAtt 
+              - DeleteApartments
+              - Arn
+            - /invocations
+        IntegrationResponses:
+          - StatusCode: 200
+      RequestParameters:
+        method.request.path.id: true
+      ResourceId: !Ref ApiResource
+      RestApiId: !Ref AppApi
+      MethodResponses:
+        - StatusCode: 200
+          ResponseModels:
+            application/json: Empty
 
   ApartmentsApiRequestOPTIONS:
     Type: 'AWS::ApiGateway::Method'
@@ -209,7 +261,8 @@ Resources:
       - ApartmentsApiRequestGET      
       - ApartmentsApiRequestPOST
       - ApartmentsApiRequestGET
-      - ApartmentsApiRequestOPTIONS      
+      - ApartmentsApiRequestDELETE
+      - ApartmentsApiRequestOPTIONS
     Type: 'AWS::ApiGateway::Deployment'
     Properties:
       Description: Prod deployment for API

@@ -1,5 +1,8 @@
 .App {
-  margin-top: 0px;
+  position: relative;
+  margin: auto;
+  display: block;
+  width: 75%;
   color: #79503a;
   background-color: transparent
 }

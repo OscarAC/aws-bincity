@@ -5,7 +5,7 @@ import Init from './components/init';
 import NotFound from './components/notfound';
 import './app.css';
 import Login from "./components/login";
-import SignUp from './components/signup';
+// import SignUp from './components/signup';
 import { connect } from 'react-redux';
 import * as Actions from './actions/authActions';
 import Auth from "@aws-amplify/auth";
@@ -18,7 +18,7 @@ class App extends Component {
     super(props);
 
     Auth.currentSession().then(res=>{
-      this.props.actions.updateAuthStatus(true);
+      this.props.actions.updateAuthStatus(res, true);
     });
   }
 
@@ -30,7 +30,7 @@ class App extends Component {
 
   showLoggedOutBar = () => (
     <Form inline>
-      <Button variant="outline-light" href="/signup" className="mr-sm-2 button">Sign up</Button>
+      {/* <Button variant="outline-light" href="/signup" className="mr-sm-2 button">Sign up</Button> */}
       <Button variant="outline-light" href="/login" className="button">Login</Button>
     </Form>
   );
@@ -42,7 +42,7 @@ class App extends Component {
   render() {
 
     return (
-      <div className="App container">
+      <div className="App">
         <Navbar navbar-light="true" className="mb-3 navbar-default">
           <Navbar.Brand href="/">BinCity</Navbar.Brand>
           <Navbar.Toggle />
@@ -55,7 +55,7 @@ class App extends Component {
         <Switch>
           <Route path="/" exact component={Init} />
           <Route path="/login" exact component={Login} />
-          <Route path="/signup" exact component={SignUp} />
+          {/* <Route path="/signup" exact component={SignUp} /> */}
           <Route component={NotFound} />
         </Switch>
       </div>
@@ -64,7 +64,8 @@ class App extends Component {
 }
 
 const mapStateToProps = state => ({
-  authenticated: state.auth.authenticated
+  authenticated: state.auth.authenticated,
+  user: state.auth.user
 })
 
 const mapDispatchToProps = dispatch => ({
