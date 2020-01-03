@@ -20,8 +20,8 @@ class Control extends Component {
     }
 
     onApartmentClick = (key, value) => {
-        
-        let apartment = this.props.apartments.find(a=>a.key ==key);
+
+        let apartment = this.props.apartments.find(a => a.key == key);
         apartment.value = value ? 1 : 0;
         apartment.dirty = !apartment.dirty;
 
@@ -32,8 +32,8 @@ class Control extends Component {
 
         let floorCount = this.props.currentApartments.length / 8;
         if (floorCount < 16) {
-            
-            this.props.actions.requestNewFloor(this.props.apartments, this.props.building);            
+
+            this.props.actions.requestNewFloor(this.props.apartments, this.props.building);
         }
     }
 
@@ -46,7 +46,7 @@ class Control extends Component {
 
         let sections = [];
 
-        for (let i = 0; i < this.props.currentApartments.length / 8; i++) {
+        for (let i = (this.props.currentApartments.length / 8) - 1; i >= 0 ; i--) {
 
             sections.push(
                 <section key={this.props.building + '' + i}>
@@ -54,6 +54,7 @@ class Control extends Component {
                     <div>
 
                         {this.props.currentApartments.filter(a => a.floor == i)
+                            .sort((a, b) => a.apartment > b.apartment)
                             .map(a => {
                                 let id = this.props.building + '' + i + '' + a.apartment;
                                 return (<input key={a.key} id={id}

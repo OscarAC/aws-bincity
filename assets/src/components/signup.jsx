@@ -109,10 +109,9 @@ class SignUp extends Component {
         );
     }
 
-    render() {
-        console.log('rendering signup');
+    render() {        
 
-        if (this.props.user !== undefined && this.props.confirmed)
+        if (this.props.user != undefined && this.props.confirmed)
             return <Redirect to='/login' />
 
         return (

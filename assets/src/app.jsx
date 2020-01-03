@@ -8,9 +8,19 @@ import Login from "./components/login";
 import SignUp from './components/signup';
 import { connect } from 'react-redux';
 import * as Actions from './actions/authActions';
+import Auth from "@aws-amplify/auth";
 import { bindActionCreators } from 'redux';
 
 class App extends Component {
+
+  constructor(props) {
+
+    super(props);
+
+    Auth.currentSession().then(res=>{
+      this.props.actions.updateAuthStatus(true);
+    });
+  }
 
   showLoggedInBar = () => (
     <Form inline>
@@ -42,7 +52,7 @@ class App extends Component {
             </Nav>
           </Navbar.Collapse>
         </Navbar>
-        <Switch>          
+        <Switch>
           <Route path="/" exact component={Init} />
           <Route path="/login" exact component={Login} />
           <Route path="/signup" exact component={SignUp} />
@@ -58,7 +68,7 @@ const mapStateToProps = state => ({
 })
 
 const mapDispatchToProps = dispatch => ({
-    actions: bindActionCreators(Actions, dispatch)
+  actions: bindActionCreators(Actions, dispatch)
 })
 
 export default connect(mapStateToProps, mapDispatchToProps)(App);

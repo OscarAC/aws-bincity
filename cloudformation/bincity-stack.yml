@@ -9,6 +9,11 @@ Parameters:
     Default: bincity
     AllowedPattern: "^[a-z]{1,12}"
     ConstraintDescription: The ProjectName can by up to 12 characters, lowercase letters (a-z) only.
+  AdminUserEmail:
+     Description: E-mail of the administrator account to be created.
+     Type: String
+     AllowedPattern: "/[^\s@]+@[^\s@]+\.[^\s@]+/"
+     ConstraintDescription: The AdminUserEmail must be a valid e-mail format.
   GitHubOAuthToken:
     Type: String
     NoEcho: true
@@ -125,7 +130,7 @@ Resources:
       UsernameAttributes:
         - email
       AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: false
+        AllowAdminCreateUserOnly: true
         InviteMessageTemplate:
           EmailMessage: 'Your username is {username} and temporary password is {####}. '
           EmailSubject: Your temporary password
@@ -250,6 +255,19 @@ Resources:
           - CognitoUnAuthorizedRole
           - Arn
   
+  InitialSystemAdminUser:
+    Type: AWS::Cognito::UserPoolUser
+    Properties:
+      UserPoolId:
+        Ref: UserPool
+      Username: !Ref AdminUserEmail
+      DesiredDeliveryMediums:
+      - EMAIL
+      ForceAliasCreation: false
+      UserAttributes:
+      - Name: email
+        Value: ${self:custom.systemUserEmail}      
+
   # Gateway API
   AppApi:
     Type: 'AWS::ApiGateway::RestApi'

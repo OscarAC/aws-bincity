@@ -9,14 +9,14 @@ const headers = {
 
 function emptyFloor(building, floor) {
   return [
-      { key: uuid.v4(), apartment: 0, value: 0, floor: floor, building: building },
-      { key: uuid.v4(), apartment: 1, value: 0, floor: floor, building: building },
-      { key: uuid.v4(), apartment: 2, value: 0, floor: floor, building: building },
-      { key: uuid.v4(), apartment: 3, value: 0, floor: floor, building: building },
-      { key: uuid.v4(), apartment: 4, value: 0, floor: floor, building: building },
-      { key: uuid.v4(), apartment: 5, value: 0, floor: floor, building: building },
-      { key: uuid.v4(), apartment: 6, value: 0, floor: floor, building: building },
-      { key: uuid.v4(), apartment: 7, value: 0, floor: floor, building: building }
+    { key: uuid.v4(), apartment: 0, value: 0, floor: floor, building: building },
+    { key: uuid.v4(), apartment: 1, value: 0, floor: floor, building: building },
+    { key: uuid.v4(), apartment: 2, value: 0, floor: floor, building: building },
+    { key: uuid.v4(), apartment: 3, value: 0, floor: floor, building: building },
+    { key: uuid.v4(), apartment: 4, value: 0, floor: floor, building: building },
+    { key: uuid.v4(), apartment: 5, value: 0, floor: floor, building: building },
+    { key: uuid.v4(), apartment: 6, value: 0, floor: floor, building: building },
+    { key: uuid.v4(), apartment: 7, value: 0, floor: floor, building: building }
   ]
 }
 
@@ -31,7 +31,7 @@ exports.handler = (event, context, callback) => {
    * is a numberic value, if not, then send erro 400 (invalid request)
    */
   if (buildingNumber === undefined) {
-    
+
     callback(null, {
       statusCode: 400,
       headers: headers,
@@ -40,7 +40,7 @@ exports.handler = (event, context, callback) => {
     return;
   }
   else {
-    buildingNumber = parseInt(buildingNumber);    
+    buildingNumber = parseInt(buildingNumber);
   }
 
   /**
@@ -74,73 +74,71 @@ exports.handler = (event, context, callback) => {
     else {
 
       currentApartmentCount = data['Count']
-    }
-  });
 
-
-  /**
-   * After retrieving building apartments, we check for the number of floors registered for that building,
-   * if the max has been reached, we return a 403, else, 
-   * we proceed and create the required apartments for that building
-   */
-  if (currentApartmentCount / 8 >= 16) {
-    callback(null,
-      {
-        statusCode: 403,
-        headers: headers,
-        body: 'Maximum number of floors for the building has been reached'
-      });
-    return;
-  }
-
-  else {
-
-    let newFloor = emptyFloor(buildingNumber, currentApartmentCount);
-    let requestItems = [];
-
-    Array.prototype.forEach.call(newFloor, item=>{
-      requestItems.push({
-        PutRequest: {
-          Item: {
-            key: item['key'],
-            apartment: item['apartment'],
-            floor: item['floor'],
-            building: item['building'],
-            value: item['value']
-          }
-        }
-      });
-    });
-
-    let params = {
-      RequestItems: {
-        'TBinCity': requestItems
-      }
-    };
-
-    dynamoDB.batchWrite(params, function (err, data) {
-
-      if (err) {
-
+      /**
+       * After retrieving building apartments, we check for the number of floors registered for that building,
+       * if the max has been reached, we return a 403, else, 
+       * we proceed and create the required apartments for that building
+       */
+      if (currentApartmentCount / 8 >= 16) {
         callback(null,
           {
-            statusCode: 500,
+            statusCode: 403,
             headers: headers,
-            body: err
+            body: 'Maximum number of floors for the building has been reached'
           });
         return;
-
-      } else {
-
-        callback(null,
-          {
-            statusCode: 200,
-            headers: headers,
-            body: JSON.stringify(newFloor)
-          });
       }
 
-    });
-  }
+      else {
 
-};
+        let newFloor = emptyFloor(buildingNumber, currentApartmentCount / 8);
+        let requestItems = [];
+
+        Array.prototype.forEach.call(newFloor, item => {
+          requestItems.push({
+            PutRequest: {
+              Item: {
+                key: item['key'],
+                apartment: item['apartment'],
+                floor: item['floor'],
+                building: item['building'],
+                value: item['value']
+              }
+            }
+          });
+        });
+
+        let params = {
+          RequestItems: {
+            'TBinCity': requestItems
+          }
+        };
+
+        dynamoDB.batchWrite(params, function (err, data) {
+
+          if (err) {
+
+            callback(null,
+              {
+                statusCode: 500,
+                headers: headers,
+                body: err
+              });
+            return;
+
+          } else {
+
+            callback(null,
+              {
+                statusCode: 200,
+                headers: headers,
+                body: JSON.stringify(newFloor)
+              });
+          }
+
+        });
+      }
+    }
+  });
+}

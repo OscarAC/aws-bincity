@@ -27,11 +27,9 @@ export const fetchApartments = () => dispatch => {
     API.get("apartments", "apartments", null)
         .then(res => {
 
-            console.log(res.data);
+            let apartments = res;
 
-            let apartments = res.data;
-
-            if(apartments === undefined){
+            if (apartments === undefined) {
                 apartments = [];
             }
 
@@ -74,10 +72,16 @@ export const requestNewFloor = (apartments, building) => dispatch => {
         }
 
     }).then(res => {
+        
+        let newApartments = res;
+
+        if (newApartments === undefined) {
+            newApartments = [];
+        }
 
         dispatch({
             type: APARTMENTS_NEWFLOOR_SUCCESS,
-            apartments: apartments.concat(res.data)
+            apartments: apartments.concat(newApartments)
         });
 
     }).catch(err => {
@@ -98,7 +102,7 @@ export const save = (apartments) => dispatch => {
     dispatch({ type: APARTMENTS_SAVE_STARTED });
 
     API.put("apartments", "apartments", {
-        
+
         body: {
             apartments: apartments.filter(a => a.dirty).map(a => {
                 delete a.dirty;

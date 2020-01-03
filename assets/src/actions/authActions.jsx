@@ -1,6 +1,12 @@
 import { LOGIN_STARTED, LOGIN_SUCCESS, LOGIN_ERROR, LOGOUT } from './types';
 import Auth from "@aws-amplify/auth";
 
+export const updateAuthStatus = (authenticated) => dispatch => {
+
+    if(authenticated)
+        dispatch(loginSuccess());
+}
+
 export const authenticate = (email, password) => dispatch => {
 
     dispatch(loginStarted());
