@@ -282,7 +282,6 @@ Resources:
     Properties:
       BatchSize: 100
       Enabled: True
-      EventSourceArn:
-        Fn::Ref: StreamArn
-        Fn::GetAtt: [ StreamReader , Arn ]
+      EventSourceArn: !Ref StreamArn
+      FunctionName: !GetAtt StreamReader.Arn
       StartingPosition: LATEST

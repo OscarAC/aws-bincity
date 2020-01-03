@@ -697,7 +697,11 @@ Resources:
                 ChangeSetName: !Sub '${ProjectName}-lambdas-changeset'
                 Capabilities: CAPABILITY_NAMED_IAM
                 TemplatePath: !Sub '${ProjectName}-Lambdas-BuildArtifact::post-functions-stack.yml'
-                ParameterOverrides: !Sub '{"DynamoDbRole": "${DynamoDbRole}", "ProjectName": "${ProjectName}", "AppApi": "${AppApi}", "ApiResource": "${ApartmentsApiResource}", "StreamArn": "$(Fn::GetAtt:[TBinCity, StreamArn])"}'
+                ParameterOverrides: 
+                  !Sub 
+                    - '{"DynamoDbRole": "${DynamoDbRole}", "ProjectName": "${ProjectName}", "AppApi": "${AppApi}", "ApiResource": "${ApartmentsApiResource}", "StreamArn": "${StreamARN}"}'
+                    - { StreamARN: !GetAtt 'TBinCity.StreamArn' }
+
               RunOrder: 2
 
             - Name: execute-lambda-changeset
