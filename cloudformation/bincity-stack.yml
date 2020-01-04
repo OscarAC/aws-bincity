@@ -13,7 +13,7 @@ Parameters:
     Description: E-mail of the administrator account to be created.
     Type: String
     AllowedPattern: "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"
-    ConstraintDescription: The AdminUserEmail must be a valid e-mail format.
+    ConstraintDescription: The AdminUserEmail must be a valid e-mail format.  
   GitHubOAuthToken:
     Type: String
     NoEcho: true
@@ -32,6 +32,16 @@ Parameters:
     Type: String
     Default: develop
     AllowedPattern: "[A-Za-z0-9-]+"
+  KeyName:
+    Description: Name of an existing EC2 Keypair to enable SSH access to the instances
+    Type: AWS::EC2::KeyPair::KeyName
+  PublicSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: subnet-
+  InfluxPassword:
+    Description: Temporary password for the administrator user of Influx, *PLEASE REMEMBER TO CHANGE IT*
+    Type: String
+    AllowedPattern: "^[a-z]{1,12}"
 
 Conditions:
   IADRegion: !Equals [!Ref "AWS::Region", "us-east-1"]
@@ -425,7 +435,11 @@ Resources:
                   - !Join 
                     - ''
                     - - !GetAtt LambdaBucket.Arn
-                      - /*         
+                      - /*
+                  - !Join 
+                    - ''
+                    - - !GetAtt TokenBucket.Arn
+                      - /*
                 Effect: Allow
         - PolicyName: !Sub "${ProjectName}-codebuild-general"
           PolicyDocument:
@@ -491,6 +505,14 @@ Resources:
                   - 'cloudformation:CreateChangeSet'
                 Resource: !Sub 'arn:aws:cloudformation:${AWS::Region}:aws:transform/Serverless-2016-10-31'
                 Effect: Allow
+              - Action:
+                  - 'lambda:CreateEventSourceMapping'
+                  - 'lambda:ListEventSourceMapping'
+                  - 'lambda:GetEventSourceMapping'
+                  - 'lambda:UpdateEventSourceMapping'
+                  - 'lambda:DeleteEventSourceMapping'
+                Resource: '*'
+                Effect: Allow
       Path: /
 
   # CodePipeline Role
@@ -524,7 +546,7 @@ Resources:
           PolicyDocument: 
             Statement: 
               - Action: 
-                  - "iam:PassRole"
+                  - 'iam:PassRole'
                   - 'cloudformation:*'
                   - 'cloudwatch:*'
                   - 'lambda:*'
@@ -607,32 +629,36 @@ Resources:
       ServiceRole: !Ref CodeBuildRole
       Source:
         Type: CODEPIPELINE        
-        BuildSpec: !Sub |
-          version: 0.2
-          phases:
-            install:
-              runtime-versions:
-                nodejs: 10
-            pre_build:
-              commands:                                
-                - cd functions/listApartments
-                - npm install
-                - cd ../updateApartments
-                - npm install
-                - cd ../createApartments
-                - npm install
-                - cd ../deleteApartments
-                - npm install
-                - cd ../streamReader
-                - npm install
-                - cd ..
-            build:
-              commands:
-                - aws cloudformation package --template-file ./functions-stack.yml --output-template-file post-functions-stack.yml --s3-bucket ${LambdaBucket}
-          artifacts:
-            files:
-              - '**/*'
-            base-directory: functions
+        BuildSpec:
+          Fn::Base64: !Sub
+            - version: 0.2
+              phases:
+                install:
+                  runtime-versions:
+                    nodejs: 10
+                pre_build:
+                  commands:                                
+                    - cd functions/listApartments
+                    - npm install
+                    - cd ../updateApartments
+                    - npm install
+                    - cd ../createApartments
+                    - npm install
+                    - cd ../deleteApartments
+                    - npm install
+                    - cd ../streamReader
+                    - aws s3 cp s3:://${TokenBucket}/influxtoken.dat .
+                    - echo ${loadBalancerDNS} > ./influxurl.dat
+                    - npm install
+                    - cd ..
+                build:
+                  commands:
+                    - aws cloudformation package --template-file ./functions-stack.yml --output-template-file post-functions-stack.yml --s3-bucket ${LambdaBucket}
+              artifacts:
+                files:
+                  - '**/*'
+                base-directory: functions
+            - loadBalancerDNS: !GetAtt InfluxLoadBalancer.DNSName
       TimeoutInMinutes: 5
 
   # Project Pipeline
@@ -735,7 +761,175 @@ Resources:
                 ProjectName: !Sub '${ProjectName}-build-assets'
               RunOrder: 1             
     DependsOn:
-      -  PipelineArtifactsBucket
+      - PipelineArtifactsBucket
+      - InfluxLaunchConfiguration
+
+  # Influx Node Security Group
+  InfluxNodeSG:
+    Type: 'AWS::EC2::SecurityGroup'    
+    Properties:
+      Name: !Sub '${ProjectName}-influx-securitygroup'
+      GroupDescription: "InfluxDB Security Group"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '9999'
+          ToPort: '9999'
+          SourceSecurityGroupId: !GetAtt InfluxLoadBalancerSG.GroupId
+        - IpProtocol: tcp 
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+
+  # Influx LoadBalancer Security Group
+  InfluxLoadBalancerSG:
+    Type: 'AWS::EC2::SecurityGroup'    
+    Properties:
+      Name: !Sub '${ProjectName}-influx-lb-securitygroup'
+      GroupDescription: "InfluxDB LoadBalancer Security Group"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0       
+
+  # Influx LoadBalancer
+  InfluxLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
+    Properties:
+      Name: !Sub '${ProjectName}-influx-loadbalancer'
+      Subnets: !Ref PublicSubnets    
+      Listeners:
+        - InstancePort: '9999'
+          Protocol: tcp
+          InstanceProtocol: tcp
+          LoadBalancerPort: '80'
+      CrossZone: false
+      SecurityGroups: 
+        - !GetAtt InfluxLoadBalancerSG.GroupId
+      HealthCheck:
+        HealthyThreshold: 4
+        Interval: 10
+        Timeout: 5
+        UnhealthyThreshold: 2
+        Target: 'HTTP:9999/'
+  
+  # Influx Launch Configuration
+  InfluxLaunchConfiguration:
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+    Properties:
+      Name: !Sub '${ProjectName}-influx-config'
+      KeyName: !Ref KeyName
+      ImageId: ami-0dacb0c129b49f529
+      SecurityGroups:
+        - !Ref InfluxNodeSG
+      IamInstanceProfile: !Ref InfluxInstanceProfile
+      InstanceType: t2.micro
+      BlockDeviceMappings:
+        - DeviceName: '/dev/xvda'
+          Ebs:
+            VolumeSize: 100
+            VolumeType: io1
+            Iops: 1500
+        - DeviceName: '/dev/sdb'
+          Ebs:
+            VolumeSize: 50
+            VolumeType: io1
+            Iops: 1500
+      EbsOptimized: false
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          mkfs -t ext4 /dev/xvdb
+          mkdir /influx
+          mount /dev/xvdb /influx
+          cd /influx
+          wget https://dl.influxdata.com/influxdb/releases/influxdb_2.0.0-alpha.21_linux_amd64.tar.gz
+          tar xvfz influxdb_2.0.0-alpha.21_linux_amd64.tar.gz
+          cd influxdb_2.0.0-alpha.21_linux_amd64
+          mkdir data
+          ./influxd --store=bolt --bolt-path=./data/influxd.bolt --engine-path=./data/engine &
+          sleep 15
+          ./influx setup -f -b BinCity -o BinCity -u admin -p ${InfluxPassword}
+          cat /root/.influxdbv2/credentials > ./influxtoken.dat
+          aws s3 cp ./influxtoken.dat s3://${TokenBucket}/
+          rm ./influxtoken.dat
+
+  # Influx AutoScaling Group
+  InfluxAutoScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        PauseTime: PT0S
+        MaxBatchSize: 1
+        MinInstancesInService: 1
+    Properties:
+      Name: !Sub '${ProjectName}-influx-autoscalinggroup'
+      LoadBalancerNames:
+        - !Ref InfluxLoadBalancer
+      MinSize: 1
+      MaxSize: 2
+      LaunchConfigurationName: !Ref InfluxLaunchConfiguration
+      AvailabilityZones: !GetAZs ""
+    DependsOn:
+      - InfluxLoadBalancer
+
+  #Influx Scaling Policy
+  InfluxScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      Name: !Sub '${ProjectName}-influx-scalingpolicy'
+      ScalingAdjustment: 1
+      AutoScalingGroupName: !Ref InfluxAutoScalingGroup
+      AdjustmentType: ChangeInCapacity
+
+  # Influx Node Instance Profile
+  InfluxInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Name: !Sub '${ProjectName}-influx-instanceprofile'
+      Path: /
+      Roles:
+        - !Ref InfluxRole
+  
+  # Influx Role
+  InfluxRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Name: !Sub '${ProjectName}-influx-role'
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: 
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+      Policies:
+        - PolicyName: influxdb-policies
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 's3:PutObject'
+                Resource: 
+                  - !GetAtt TokenBucket.Arn
+                  - !Join
+                      - ''
+                      - - !GetAtt TokenBucket.Arn
+                        - '/*'
+                Effect: Allow
+              - Action:
+                  - 'cloudwatch:*'
+                Resource: '*'
+                Effect: Allow
+  
+  # Influx Token Bucket
+  TokenBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      MetricsConfigurations:
+        - Id: TokenBucket
 
 # Outputs:  
 #   WebApplication:
@@ -745,3 +939,8 @@ Resources:
 #     Value: !Sub 
 #       - 'https://${Domain}'
 #       - Domain: !GetAtt AssetsCDN.DomainName
+#   InfluxURL:
+#     Description: URL for the Influx application
+#    Value: !Sub
+#       - 'http://${loadBalancerDNS}'
+#       - loadBalancerDNS: !GetAtt InfluxLoadBalancer.DNSName

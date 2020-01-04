@@ -72,7 +72,7 @@ export const setRealTime = (value) => dispatch => {
  * 
  * @param {*} building
  */
-export const requestNewFloor = (building) => dispatch => {
+export const requestNewFloor = (apartments, building) => dispatch => {
 
     dispatch({ type: APARTMENTS_NEWFLOOR_STARTED });
 

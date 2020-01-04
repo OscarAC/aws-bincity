@@ -1,0 +1,176 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: BinCity Influx in AWS Stack
+
+Parameters:
+
+  KeyName:
+    Description: Name of an existing EC2 Keypair to enable SSH access to the instances
+    Type: AWS::EC2::KeyPair::KeyName
+  
+  PublicSubnets:
+    Type: List<AWS::EC2::Subnet::Id>
+    Default: subnet-
+  
+  InfluxPassword:
+    Description: Temporary password for the administrator user of Influx, *PLEASE REMEMBER TO CHANGE IT*
+    Type: String
+    AllowedPattern: "^[a-z]{1,12}"
+
+Resources:
+
+  InfluxNodeSG:
+    Type: 'AWS::EC2::SecurityGroup'    
+    Properties:
+      GroupDescription: "InfluxDB Security Group"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '9999'
+          ToPort: '9999'
+          SourceSecurityGroupId: !GetAtt InfluxLoadBalancerSG.GroupId
+        - IpProtocol: tcp 
+          FromPort: '22'
+          ToPort: '22'
+          CidrIp: 0.0.0.0/0
+
+  InfluxLoadBalancerSG:
+    Type: 'AWS::EC2::SecurityGroup'    
+    Properties:
+      GroupDescription: "InfluxDB LoadBalancer Security Group"
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0       
+
+  InfluxLoadBalancer:
+    Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
+    Properties:
+      Subnets: !Ref PublicSubnets    
+      Listeners:
+        - InstancePort: '9999'
+          Protocol: tcp
+          InstanceProtocol: tcp
+          LoadBalancerPort: '80'
+      CrossZone: false
+      SecurityGroups: 
+        - !GetAtt InfluxLoadBalancerSG.GroupId
+      HealthCheck:
+        HealthyThreshold: 4
+        Interval: 10
+        Timeout: 5
+        UnhealthyThreshold: 2
+        Target: 'HTTP:9999/'
+    
+  InfluxLaunchConfiguration:
+    Type: 'AWS::AutoScaling::LaunchConfiguration'
+    Properties:
+      KeyName: !Ref KeyName
+      ImageId: ami-0dacb0c129b49f529
+      SecurityGroups:
+        - !Ref InfluxNodeSG
+      IamInstanceProfile: !Ref InfluxInstanceProfile
+      InstanceType: t2.micro
+      BlockDeviceMappings:
+        - DeviceName: '/dev/xvda'
+          Ebs:
+            VolumeSize: 100
+            VolumeType: io1
+            Iops: 1500
+        - DeviceName: '/dev/sdb'
+          Ebs:
+            VolumeSize: 50
+            VolumeType: io1
+            Iops: 1500
+      EbsOptimized: false
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          mkfs -t ext4 /dev/xvdb
+          mkdir /influx
+          mount /dev/xvdb /influx
+          cd /influx
+          wget https://dl.influxdata.com/influxdb/releases/influxdb_2.0.0-alpha.21_linux_amd64.tar.gz
+          tar xvfz influxdb_2.0.0-alpha.21_linux_amd64.tar.gz
+          cd influxdb_2.0.0-alpha.21_linux_amd64
+          mkdir data
+          ./influxd --store=bolt --bolt-path=./data/influxd.bolt --engine-path=./data/engine &
+          sleep 15
+          ./influx setup -f -b BinCity -o BinCity -u admin -p ${InfluxPassword}
+          cat /root/.influxdbv2/credentials > ./influxtoken.dat
+          aws s3 cp ./influxtoken.dat s3://${TokenBucket}/
+          rm ./influxtoken.dat
+
+  InfluxAutoScalingGroup:
+    Type: 'AWS::AutoScaling::AutoScalingGroup'
+    UpdatePolicy:
+      AutoScalingRollingUpdate:
+        PauseTime: PT0S
+        MaxBatchSize: 1
+        MinInstancesInService: 1
+    Properties:
+      LoadBalancerNames:
+        - !Ref InfluxLoadBalancer
+      MinSize: 1
+      MaxSize: 2
+      LaunchConfigurationName: !Ref InfluxLaunchConfiguration
+      AvailabilityZones: !GetAZs ""
+    DependsOn:
+      - InfluxLoadBalancer
+
+  InfluxScalingPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      ScalingAdjustment: 1
+      AutoScalingGroupName: !Ref InfluxAutoScalingGroup
+      AdjustmentType: ChangeInCapacity
+
+  InfluxInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref InfluxRole
+  
+  InfluxRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: 
+              - 'sts:AssumeRole'
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+      Policies:
+        - PolicyName: influxdb-policies
+          PolicyDocument:
+            Statement:
+              - Action:
+                  - 's3:PutObject'
+                Resource: 
+                  - !GetAtt TokenBucket.Arn
+                  - !Join
+                      - ''
+                      - - !GetAtt TokenBucket.Arn
+                        - '/*'
+                Effect: Allow
+              - Action:
+                  - 'cloudwatch:*'
+                Resource: '*'
+                Effect: Allow
+
+  TokenBucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      AccessControl: Private
+      MetricsConfigurations:
+        - Id: TokenBucket
+
+Outputs:
+  InfluxURL:
+    Description: URL for the Influx application
+    Value: !Sub
+      - 'http://${loadBalancerDNS}'
+      - loadBalancerDNS: !GetAtt InfluxLoadBalancer.DNSName
