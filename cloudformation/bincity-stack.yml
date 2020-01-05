@@ -15,20 +15,24 @@ Parameters:
     AllowedPattern: "^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$"
     ConstraintDescription: The AdminUserEmail must be a valid e-mail format.  
   GitHubOAuthToken:
+    Description: GitHub Token with Read access to the repository containing the project
     Type: String
     NoEcho: true
     MinLength: 40
     MaxLength: 40
     AllowedPattern: '[a-z0-9]*'
   GitHubOwner:
+    Description: Username of the owner of the token
     Type: String
     Default: OscarAC
     AllowedPattern: "[A-Za-z0-9-]+"
   GitHubRepo:
+    Description: Name of the Repository containing the project
     Type: String
     Default: aws-bincity
     AllowedPattern: "[A-Za-z0-9-]+"
   GitHubBranch:
+    Description: The name of the GitHub branch to pull
     Type: String
     Default: develop
     AllowedPattern: "[A-Za-z0-9-]+"
@@ -42,6 +46,11 @@ Parameters:
     Description: Temporary password for the administrator user of Influx, *PLEASE REMEMBER TO CHANGE IT*
     Type: String
     AllowedPattern: "^[a-z]{1,12}"
+    NoEcho: true
+  VpcId:
+    Description: Name Identifier of the VPC to attach the Influx environment
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-
 
 Conditions:
   IADRegion: !Equals [!Ref "AWS::Region", "us-east-1"]
@@ -150,9 +159,9 @@ Resources:
       AdminCreateUserConfig:
         AllowAdminCreateUserOnly: true
         InviteMessageTemplate:
-          EmailMessage: 'Your username is {username} and temporary password is {####}. '
+          EmailMessage: 'Your username is {username} and temporary password is {####}'
           EmailSubject: Your temporary password
-          SMSMessage: 'Your username is {username} and temporary password is {####}.'
+          SMSMessage: 'Your username is {username} and temporary password is {####}'
         UnusedAccountValidityDays: 7
       Policies:
         PasswordPolicy:
@@ -630,8 +639,9 @@ Resources:
       Source:
         Type: CODEPIPELINE        
         BuildSpec:
-          Fn::Base64: !Sub
-            - version: 0.2
+          !Sub
+            - | 
+              version: 0.2
               phases:
                 install:
                   runtime-versions:
@@ -646,9 +656,7 @@ Resources:
                     - npm install
                     - cd ../deleteApartments
                     - npm install
-                    - cd ../streamReader
-                    - aws s3 cp s3:://${TokenBucket}/influxtoken.dat .
-                    - echo ${loadBalancerDNS} > ./influxurl.dat
+                    - cd ../streamReader                    
                     - npm install
                     - cd ..
                 build:
@@ -657,8 +665,7 @@ Resources:
               artifacts:
                 files:
                   - '**/*'
-                base-directory: functions
-            - loadBalancerDNS: !GetAtt InfluxLoadBalancer.DNSName
+                base-directory: functions            
       TimeoutInMinutes: 5
 
   # Project Pipeline
@@ -725,9 +732,9 @@ Resources:
                 TemplatePath: !Sub '${ProjectName}-Lambdas-BuildArtifact::post-functions-stack.yml'
                 ParameterOverrides: 
                   !Sub 
-                    - '{"DynamoDbRole": "${DynamoDbRole}", "ProjectName": "${ProjectName}", "AppApi": "${AppApi}", "ApiResource": "${ApartmentsApiResource}", "StreamArn": "${StreamARN}"}'
+                    - '{"DynamoDbRole": "${DynamoDbRole}", "TokenBucket": "${TokenBucket}", "InfluxURL": "${InfluxURL}", "StreamReaderRole": "${StreamReaderRole}", "ProjectName": "${ProjectName}", "AppApi": "${AppApi}", "ApiResource": "${ApartmentsApiResource}", "StreamArn": "${StreamARN}"}'
                     - { StreamARN: !GetAtt 'TBinCity.StreamArn' }
-
+                    - { InfluxURL: !GetAtt InfluxLoadBalancer.DNSName }
               RunOrder: 2
 
             - Name: execute-lambda-changeset
@@ -767,8 +774,7 @@ Resources:
   # Influx Node Security Group
   InfluxNodeSG:
     Type: 'AWS::EC2::SecurityGroup'    
-    Properties:
-      Name: !Sub '${ProjectName}-influx-securitygroup'
+    Properties:      
       GroupDescription: "InfluxDB Security Group"
       SecurityGroupIngress:
         - IpProtocol: tcp
@@ -779,30 +785,30 @@ Resources:
           FromPort: '22'
           ToPort: '22'
           CidrIp: 0.0.0.0/0
+      VpcId: !Ref VpcId
 
   # Influx LoadBalancer Security Group
   InfluxLoadBalancerSG:
     Type: 'AWS::EC2::SecurityGroup'    
-    Properties:
-      Name: !Sub '${ProjectName}-influx-lb-securitygroup'
+    Properties:      
       GroupDescription: "InfluxDB LoadBalancer Security Group"
       SecurityGroupIngress:
         - IpProtocol: tcp
-          FromPort: '80'
-          ToPort: '80'
-          CidrIp: 0.0.0.0/0       
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0  
+      VpcId: !Ref VpcId
 
   # Influx LoadBalancer
   InfluxLoadBalancer:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
-    Properties:
-      Name: !Sub '${ProjectName}-influx-loadbalancer'
+    Properties:      
       Subnets: !Ref PublicSubnets    
       Listeners:
         - InstancePort: '9999'
           Protocol: tcp
           InstanceProtocol: tcp
-          LoadBalancerPort: '80'
+          LoadBalancerPort: '443'
       CrossZone: false
       SecurityGroups: 
         - !GetAtt InfluxLoadBalancerSG.GroupId
@@ -811,34 +817,49 @@ Resources:
         Interval: 10
         Timeout: 5
         UnhealthyThreshold: 2
-        Target: 'HTTP:9999/'
+        Target: 'HTTPS:9999/'
   
   # Influx Launch Configuration
   InfluxLaunchConfiguration:
     Type: 'AWS::AutoScaling::LaunchConfiguration'
-    Properties:
-      Name: !Sub '${ProjectName}-influx-config'
+    Properties:      
       KeyName: !Ref KeyName
       ImageId: ami-0dacb0c129b49f529
       SecurityGroups:
         - !Ref InfluxNodeSG
       IamInstanceProfile: !Ref InfluxInstanceProfile
       InstanceType: t2.micro
+      InstanceMonitoring: false
       BlockDeviceMappings:
         - DeviceName: '/dev/xvda'
           Ebs:
-            VolumeSize: 100
-            VolumeType: io1
-            Iops: 1500
+            VolumeSize: 10
+#            VolumeType: io1
+#            Iops: 1500
         - DeviceName: '/dev/sdb'
           Ebs:
-            VolumeSize: 50
-            VolumeType: io1
-            Iops: 1500
+            VolumeSize: 20
+#            VolumeType: io1
+#            Iops: 1500
       EbsOptimized: false
       UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
+          setup() {
+          local -r -i max_attempts="$1"; shift
+          local -r cmd="$@"
+          local -i attempt_num=1
+          until /root/.influxdbv2/credentials
+          do
+          if ((attempt_num==max_attempts))
+          then                      
+          return 1
+          else
+          ./influx setup -f -b BinCity -o BinCity -u admin -p ${InfluxPassword} --host https://localhost:9999 --skip-verify
+          sleep $((attempt_num++))
+          fi
+          done 
+          }
           mkfs -t ext4 /dev/xvdb
           mkdir /influx
           mount /dev/xvdb /influx
@@ -846,10 +867,11 @@ Resources:
           wget https://dl.influxdata.com/influxdb/releases/influxdb_2.0.0-alpha.21_linux_amd64.tar.gz
           tar xvfz influxdb_2.0.0-alpha.21_linux_amd64.tar.gz
           cd influxdb_2.0.0-alpha.21_linux_amd64
-          mkdir data
-          ./influxd --store=bolt --bolt-path=./data/influxd.bolt --engine-path=./data/engine &
-          sleep 15
-          ./influx setup -f -b BinCity -o BinCity -u admin -p ${InfluxPassword}
+          openssl req -x509 -nodes -newkey rsa:2048 -keyout ./influx.key -out ./influx.crt -days 365 -subj '/CN=techadit.com/O=None/C=US'
+          ./influxd --store=bolt --bolt-path=./data/influxd.bolt --engine-path=./data/engine --tls-cert ./influx.crt --tls-key ./influx.key &
+          mkdir data          
+          sleep 10
+          setup 5
           cat /root/.influxdbv2/credentials > ./influxtoken.dat
           aws s3 cp ./influxtoken.dat s3://${TokenBucket}/
           rm ./influxtoken.dat
@@ -862,8 +884,7 @@ Resources:
         PauseTime: PT0S
         MaxBatchSize: 1
         MinInstancesInService: 1
-    Properties:
-      Name: !Sub '${ProjectName}-influx-autoscalinggroup'
+    Properties:      
       LoadBalancerNames:
         - !Ref InfluxLoadBalancer
       MinSize: 1
@@ -876,8 +897,7 @@ Resources:
   #Influx Scaling Policy
   InfluxScalingPolicy:
     Type: AWS::AutoScaling::ScalingPolicy
-    Properties:
-      Name: !Sub '${ProjectName}-influx-scalingpolicy'
+    Properties:      
       ScalingAdjustment: 1
       AutoScalingGroupName: !Ref InfluxAutoScalingGroup
       AdjustmentType: ChangeInCapacity
@@ -885,8 +905,7 @@ Resources:
   # Influx Node Instance Profile
   InfluxInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
-    Properties:
-      Name: !Sub '${ProjectName}-influx-instanceprofile'
+    Properties:      
       Path: /
       Roles:
         - !Ref InfluxRole
@@ -894,8 +913,7 @@ Resources:
   # Influx Role
   InfluxRole:
     Type: AWS::IAM::Role
-    Properties:
-      Name: !Sub '${ProjectName}-influx-role'
+    Properties:      
       Path: /
       AssumeRolePolicyDocument:
         Statement:
@@ -923,6 +941,35 @@ Resources:
                 Resource: '*'
                 Effect: Allow
   
+  # Role for the DynamoDB Stream Reader/Transformer
+  StreamReaderRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      Policies:
+        - PolicyName: dynamodb-streamreader-policies
+          PolicyDocument:
+            Statement:
+              - Action:                  
+                  - 's3:GetObject'
+                Resource: 
+                  - !GetAtt TokenBucket.Arn
+                  - !Join
+                      - ''
+                      - - !GetAtt TokenBucket.Arn
+                        - '/*'
+                Effect: Allow              
+
   # Influx Token Bucket
   TokenBucket:
     Type: 'AWS::S3::Bucket'

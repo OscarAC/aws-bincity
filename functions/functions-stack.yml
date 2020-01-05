@@ -16,6 +16,15 @@ Parameters:
     StreamArn:
         Description: "DynamoDB Stream ARN"
         Type: "String"
+    StreamReaderRole:
+        Description: "Role for the DynamoDB Stream Reader Lambda"
+        Type: "String"
+    TokenBucket:
+        Description: "Name of the Token Bucket"
+        Type: "String"
+    InfluxURL:
+        Description: "URL of the Influxdb Endpoint"
+        Type: "String"
 
 Resources:
   ListApartments:
@@ -275,7 +284,11 @@ Resources:
       Handler: streamReader.handler
       CodeUri: streamReader/
       Runtime: nodejs8.10
-      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${DynamoDbRole}
+      Environtment:
+        Variables:
+          tokenBucketName: !Ref TokenBucket
+          influxUrl: !Ref InfluxURL
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${StreamReaderRole}
 
   DataTableStream:
     Type: AWS::Lambda::EventSourceMapping

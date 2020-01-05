@@ -16,6 +16,11 @@ Parameters:
     Type: String
     AllowedPattern: "^[a-z]{1,12}"
 
+  VpcId:
+    Description: Name Identifier of the VPC to attach the Influx environment
+    Type: AWS::EC2::VPC::Id
+    Default: vpc-
+
 Resources:
 
   InfluxNodeSG:
@@ -31,6 +36,7 @@ Resources:
           FromPort: '22'
           ToPort: '22'
           CidrIp: 0.0.0.0/0
+      VpcId: !Ref VpcId
 
   InfluxLoadBalancerSG:
     Type: 'AWS::EC2::SecurityGroup'    
@@ -40,7 +46,8 @@ Resources:
         - IpProtocol: tcp
           FromPort: '80'
           ToPort: '80'
-          CidrIp: 0.0.0.0/0       
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref VpcId
 
   InfluxLoadBalancer:
     Type: 'AWS::ElasticLoadBalancing::LoadBalancer'
@@ -70,17 +77,18 @@ Resources:
         - !Ref InfluxNodeSG
       IamInstanceProfile: !Ref InfluxInstanceProfile
       InstanceType: t2.micro
+      InstanceMonitoring: false
       BlockDeviceMappings:
         - DeviceName: '/dev/xvda'
           Ebs:
-            VolumeSize: 100
-            VolumeType: io1
-            Iops: 1500
+            VolumeSize: 10
+#            VolumeType: io1
+#            Iops: 1500
         - DeviceName: '/dev/sdb'
           Ebs:
-            VolumeSize: 50
-            VolumeType: io1
-            Iops: 1500
+            VolumeSize: 20
+#            VolumeType: io1
+#            Iops: 1500
       EbsOptimized: false
       UserData:
         Fn::Base64: !Sub |
