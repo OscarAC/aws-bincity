@@ -12,7 +12,7 @@ exports.handler = function (event, context, callback) {
             let tokenBucketName = process.env.tokenBucketName;
             let influxUrl = process.env.influxUrl;
             let influxToken = '';
-
+            
             var params = { Bucket: tokenBucketName, Key: 'influxtoken.dat' };
             s3.getObject(params, function (err, data) {
                 if (!err) {
@@ -44,7 +44,7 @@ exports.handler = function (event, context, callback) {
             });
 
 
-            axios.post(influxUrl + '/api/v2/write?org=BinCity&bucket=BinCity&precision=s',
+            axios.post('https://' + influxUrl + '/api/v2/write?org=BinCity&bucket=BinCity&precision=s',
                 data.toString().replace(/,b/g, 'b'),
                 {
                     headers: {

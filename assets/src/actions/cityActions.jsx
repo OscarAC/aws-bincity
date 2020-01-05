@@ -14,7 +14,7 @@ import {
     APARTMENTS_DELETE_STARTED,
     APARTMENTS_DELETE_SUCCESS,
     APARTMENTS_DELETE_ERROR
-    
+
 } from './types';
 
 import API from "@aws-amplify/api";
@@ -83,7 +83,7 @@ export const requestNewFloor = (apartments, building) => dispatch => {
         }
 
     }).then(res => {
-        
+
         let newApartments = res;
 
         if (newApartments === undefined) {
@@ -115,16 +115,17 @@ export const save = (apartments) => dispatch => {
     API.put("apartments", "apartments", {
 
         body: {
-            apartments: apartments.filter(a => a.dirty).map(a => {
-                delete a.dirty;
-                return a;
-            })
+            apartments: apartments.filter(a => a.dirty)
         }
 
     }).then(res => {
 
         dispatch({
-            type: APARTMENTS_SAVE_SUCCESS
+            type: APARTMENTS_SAVE_SUCCESS,
+            apartments: apartments.map(a=>{
+                delete a.dirty;
+                return a;
+            })
         });
 
     }).catch(err => {
@@ -147,22 +148,24 @@ export const deleteFloor = (apartments, building) => dispatch => {
 
     dispatch({ type: APARTMENTS_DELETE_STARTED });
 
-    API.delete("apartments", "apartments", {
+    let toDelete = apartments
+        .filter(a => a.building === building)
+        .sort((a, b) => a.floor < b.floor)
+        .slice(0, 8);
+
+    API.del("apartments", "apartments", {
 
         body: {
-            apartments: apartments
-            .filter(a=>a.building===building)
-            .sort((a,b)=>a.floor > b.floor)
-            .slice(0,8)
+            apartments: toDelete
         }
 
     }).then(res => {
         
-        let floor = res.floor;                
-        
         dispatch({
             type: APARTMENTS_DELETE_SUCCESS,
-            apartments: apartments.filter(a=>a.floor !== floor)
+            apartments: apartments.filter( e=> {
+                return toDelete.indexOf( e ) < 0;
+            })
         });
 
     }).catch(err => {

@@ -37,6 +37,13 @@ class Control extends Component {
     }
 
     onDeleteFloorClick = () => {
+
+        let floorCount = this.props.currentApartments.length / 8;
+
+        if(floorCount > 0) {
+
+            this.props.actions.deleteFloor(this.props.apartments, this.props.building);
+        }
     }
 
 

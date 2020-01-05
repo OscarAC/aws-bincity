@@ -116,16 +116,10 @@ Resources:
                   - 'dynamodb:DeleteItem'
                   - 'dynamodb:BatchGetItem'
                   - 'dynamodb:BatchWriteItem'
-                  - 'dynamodb:BatchPutItem'
-                  - 'dynamodb:DescribeStream'
-                  - 'dynamodb:GetRecords'
-                  - 'dynamodb:GetShardIterator'
-                  - 'dynamodb:ListStreams'
-                  - 'dynamodb:DescribeStream'                  
+                  - 'dynamodb:BatchPutItem'                                 
                 Resource: 
                   - 'arn:aws:dynamodb:*:*:table/TBinCity'
-                  - 'arn:aws:dynamodb:*:*:table/TBinCity/index/*'
-                  - 'arn:aws:dynamodb:*:*:table/TBinCity/stream/*'
+                  - 'arn:aws:dynamodb:*:*:table/TBinCity/index/*'                  
 
   # Cognito SNS Role
   SNSRole:
@@ -967,7 +961,17 @@ Resources:
                       - ''
                       - - !GetAtt TokenBucket.Arn
                         - '/*'
-                Effect: Allow              
+                Effect: Allow
+              - Action:
+                  - 'dynamodb:DescribeStream'
+                  - 'dynamodb:GetRecords'
+                  - 'dynamodb:GetShardIterator'
+                  - 'dynamodb:ListStreams'
+                  - 'dynamodb:DescribeStream'                  
+                Resource:                   
+                  - 'arn:aws:dynamodb:*:*:table/TBinCity/stream/*'
+                Effect: Allow
+
 
   # Influx Token Bucket
   TokenBucket:
