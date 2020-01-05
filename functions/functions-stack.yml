@@ -284,7 +284,7 @@ Resources:
       Handler: streamReader.handler
       CodeUri: streamReader/
       Runtime: nodejs8.10
-      Environtment:
+      Environment:
         Variables:
           tokenBucketName: !Ref TokenBucket
           influxUrl: !Ref InfluxURL

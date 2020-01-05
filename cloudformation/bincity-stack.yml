@@ -639,8 +639,7 @@ Resources:
       Source:
         Type: CODEPIPELINE        
         BuildSpec:
-          !Sub
-            - | 
+          !Sub | 
               version: 0.2
               phases:
                 install:
@@ -733,8 +732,8 @@ Resources:
                 ParameterOverrides: 
                   !Sub 
                     - '{"DynamoDbRole": "${DynamoDbRole}", "TokenBucket": "${TokenBucket}", "InfluxURL": "${InfluxURL}", "StreamReaderRole": "${StreamReaderRole}", "ProjectName": "${ProjectName}", "AppApi": "${AppApi}", "ApiResource": "${ApartmentsApiResource}", "StreamArn": "${StreamARN}"}'
-                    - { StreamARN: !GetAtt 'TBinCity.StreamArn' }
-                    - { InfluxURL: !GetAtt InfluxLoadBalancer.DNSName }
+                    - StreamARN: !GetAtt 'TBinCity.StreamArn'
+                      InfluxURL: !GetAtt 'InfluxLoadBalancer.DNSName'
               RunOrder: 2
 
             - Name: execute-lambda-changeset
