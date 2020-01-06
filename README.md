@@ -1,8 +1,8 @@
 # BinCity AWS Stack Template
 
-BinCity AWS Stack Template is a CloudFormation definition for the creation of a simple infrastructural solution in Amazon Web Services for rapid hosting of web applications, based on high availability and distribution, integrated authentication mechanisms, persistence, monitoring, and all the elasticity of the cloud. 
+BinCity AWS Stack Template is a CloudFormation definition for the creation of a simple infrastructural solution in Amazon Web Services for the rapid hosting of web applications, based on high availability and distribution, integrated authentication mechanisms, persistence, monitoring, and all the elasticity of the cloud. 
 
-Also, a sample web application (BinCity) is provided with the intent of demostrating the capabilities of the stack.
+Also, a sample web application (BinCity) is provided with the intent of demonstrating the capabilities of the stack.
 
 **Important Note**: Creating this AWS Stack will create and consume AWS resources which will **cost money**, please review the list of resources that the stack will create and consult the [AWS Pricing](https://aws.amazon.com/pricing/) for an estimation of the cost of running this stack on your region.
 
@@ -50,7 +50,7 @@ Also, a sample web application (BinCity) is provided with the intent of demostra
 
 &nbsp;
 
-The stack is is formed around the classical three-tier model, therefore defining the presentation, business, and data layers for the operation of the web application.
+The stack is formed around the classical three-tier model, therefore defining the presentation, business, and data layers for the operation of the web application.
 
 &nbsp;
 
@@ -60,15 +60,15 @@ The stack is is formed around the classical three-tier model, therefore defining
 
 &nbsp;
 
-At the front-end (presentation) layer, CloudFront is set for the distribution of the content and caching of the static web assets, making them available in it's global network.
+At the front-end (presentation) layer, CloudFront is set for the distribution of the content and caching of the static web assets, making them available in its global network.
 
 The web assets are stored in an S3 bucket with permissions set to only be accessible from the CloudFront distribution.
 
-For the authentication and access to the application, Cognito is used with its corresponding user pool and configured for sign-up and sign-in, which can be extended for use with social identity proviers.
+For the authentication and access to the application, Cognito is used with its corresponding user pool and configured for sign-up and sign-in, which can be extended for use with social identity providers.
 
-At the service (business) layer, and API Gateway is created to server as the front door for the RESTFul serverless functions which perform the functionality of the application and communication with the data stores.
+At the service (business) layer, and API Gateway is created to serve as the front door for the RESTFul serverless functions which perform the functionality of the application and communication with the data stores.
 
-For the data (persistence) layer, two different types of databases are deployed, DynamoDB servers as the first level of data persistence, in which in the implementation here provided, is used to store the current state of the system.
+For the data (persistence) layer, two different types of databases are deployed, DynamoDB serves as the first level of data persistence, in which in the implementation here provided, is used to store the current state of the system.
 
 A second database is provided, Influxdb, for the storage of historical data, which is updated with the changes of state of the system through time.
 
@@ -82,7 +82,7 @@ A second database is provided, Influxdb, for the storage of historical data, whi
 
 &nbsp;
 
-In the next section a description of the architecture is presented to better understand the different components and services that the stack will deploy, starting the a view of the different roles that participate in the architecture, the mechanism for deploying the system, the model of the back-end, and the model for the persistence and monitoring.
+In the next section, a description of the architecture is presented to better understand the different components and services that the stack will deploy, starting with a view of the different roles that participate in the architecture, the mechanism for deploying the system, the model of the back-end, and the model for the persistence and monitoring.
 
 &nbsp;
 
@@ -101,11 +101,11 @@ The stack takes into account three different roles; The users, the developer, an
 
 &nbsp;
 
-The idea of the stack is to make simple the operation, maintenance, and continuity of the application been serve, for that reason, a simple delivery mechanism is integrated so development of the application can be continously integrated into the stack.
+The idea of the stack is to make simple the operation, maintenance, and continuity of the application been served, for that reason, a simple delivery mechanism is integrated so the development of the application can be continuously integrated into the stack.
 
-Also, an extension to the already available AWS services (like CloudWatch) are deployed in order to provide business analytics in near realtime, that is, a timeserie database is made available for the application.
+Also, an extension to the already available AWS services (like CloudWatch) are deployed to provide business analytics in near-realtime, that is, a time-series database is made available for the application.
 
-In the following sections, a functional break-down of the different perspectives for the roles are presented.
+In the following sections, a functional break-down of the different perspectives for the roles is presented.
 
 &nbsp;
 
@@ -117,7 +117,7 @@ In the following sections, a functional break-down of the different perspectives
 
 &nbsp;
 
-The stack creates the necesary services for the automated delivery of updates to the application components, this are pulled from a GitHub repository, in which a branch is configure to be monitor for changes and deployed into the corresponding S3 buckets.
+The stack creates the necessary services for the automated delivery of updates to the application components, this is pulled from a GitHub repository, in which a branch is configured to be monitored for changes and deployed into the corresponding S3 buckets.
 
 &nbsp;
 
@@ -126,13 +126,13 @@ The stack creates the necesary services for the automated delivery of updates to
 
 &nbsp;
 
-The CodePipeline service is responsible for orchestrating the three CodeBuild projects and passing the artifacts pulled from the code repository, this artifacts are stored in a third S3 bucket (please visit the full list of components deployed for a description of all components and permissions).
+The CodePipeline service is responsible for orchestrating the three CodeBuild projects and passing the artifacts pulled from the code repository, these artifacts are stored in a third S3 bucket (please visit the full list of components deployed for a description of all components and permissions).
 
-The Lambdas CodeBuild is responsible for creating a CloudFormation Change set that will deploy or update the Stack for the lambda functions, which in turn, will create the API Gateway for the interaction with the lambdas, and store the lambdas code in its corresponding S3 bucket.
+The Lambdas CodeBuild is responsible for creating a CloudFormation Changeset that will deploy or update the Stack for the lambda functions, which in turn, will create the API Gateway for the interaction with the lambdas, and store the lambdas in its corresponding S3 bucket.
 
-All the resources necesary for the packaging of the different components of the application are contained in the code repository, for the Lambdas Stack, the CloudFormation definition can be found in the functions/ directory.
+All the resources necessary for the packaging of the different components of the application are contained in the code repository, for the Lambdas Stack, the CloudFormation definition can be found in the functions/ directory.
 
-It's important to consider, that the stack can be extended to create different deployment environments (staging, uat, production, etc..) considering there are extra costs for such.
+It's important to consider, that the stack can be extended to create different deployment environments (staging, UAT, production, etc..) considering there are extra costs for such.
 
 &nbsp;
 
@@ -171,7 +171,7 @@ At the stack creation, an e-mail address must be provided which will be used as 
 
 &nbsp;
 
-The back-end is conformed of mostly serverless services that can be requested through the API Gateway, these are the necesary lambda functions which perform the business logic and persistence of the data.
+The back-end is conformed of mostly serverless services that can be requested through the API Gateway, these are the necessary lambda functions which perform the business logic and persistence of the data.
 
 &nbsp;
 
@@ -180,11 +180,11 @@ The back-end is conformed of mostly serverless services that can be requested th
 
 &nbsp;
 
-The API Gateway is configured to utilize authorized tokens from Cognito in order to fullfil the requests, only registered and authenticated tokens will be accepted.
+The API Gateway is configured to utilize authorized tokens from Cognito to fulfill the requests, only registered and authenticated tokens will be accepted.
 
-Herefore, two types of Lambdas are provided, those performing the work of the business logic and managing the persistence, and those that react for changes to the DynamoDB Stream. In this case, the Stream Ractor will read batches of newly modified or created items, transform them and send the data to Influxdb.
+Herefore, two types of Lambdas are provided, those performing the work of the business logic and managing the persistence, and those that react for changes to the DynamoDB Stream. In this case, the Stream Reactor will read batches of newly modified or created items, transform them and send the data to Influxdb.
 
-The business logic lambdas retrieve the code for the functions from their respective bucket which are delivered from the CodeBuild project in the CodePipeline.
+The business logic lambdas retrieve the code for the functions from their respective buckets which are delivered from the CodeBuild project in the CodePipeline.
 
 &nbsp;
 
@@ -197,7 +197,7 @@ The business logic lambdas retrieve the code for the functions from their respec
 
 &nbsp;
 
-The Influxdb instance runs in an EC2, which in the stack is defined as a AutoScalingGroup and accesible through a LoadBalancer.
+The Influxdb instance runs in an EC2, which in the stack is defined as an AutoScalingGroup and accessible through a LoadBalancer.
 
 &nbsp;
 
@@ -205,11 +205,11 @@ The Influxdb instance runs in an EC2, which in the stack is defined as a AutoSca
 
 &nbsp;
 
-When deploying the stack, a VPC, Subnet, and a EC2 Keypair must be provided which will be used for the cofiguration of the LoadBalancer and the AutoScalingGroup.
+When deploying the stack, a VPC, Subnet, and an EC2 Keypair must be provided which will be used for the configuration of the LoadBalancer and the AutoScalingGroup.
 
-Also, a temporary password for the administrator account of the Influxdb will be asked, this can be used for a initial sign-in unto the Influxdb UI with the username admin, **just remember to change it**.
+Also, a temporary password for the administrator account of the Influxdb will be asked, this can be used for an initial sign-in unto the Influxdb UI with the username admin, **just remember to change it**.
 
-This instance can be modified to be within a private subnet boundries and unaccesable from the public internet, this will require some modifications to the Stream Reactor configuration in order for it to reach the private instance.
+This instance can be modified to be within private subnet boundaries and inaccessible from the public internet, this will require some modifications to the Stream Reactor configuration for it to reach the private instance.
 
 &nbsp;
 
@@ -222,7 +222,7 @@ This instance can be modified to be within a private subnet boundries and unacce
 
 &nbsp;
 
-The Demo Web Application (BinCity v0.1) represents an abstraction of a global binary state (On/Off) for a set of objects, In the application, this state are represented as apartments within a building.
+The Demo Web Application (BinCity v0.1) represents an abstraction of a global binary state (On/Off) for a set of objects, In the application, this state is represented as apartments within a building.
 
 &nbsp;
 
@@ -240,7 +240,7 @@ The application is an abstraction to different applications:
 
 The application makes use of the Cognito provided by the stack to authorize and sign the user. An authorized user can make changes to the global state.
 
-The application uses a table in DynamoDB to store the current global state, and uses the Influxdb for historical changes to the state.
+The application uses a table in DynamoDB to store the current global state and uses the Influxdb for historical changes to the state.
 
 
 The application has been developed using React and makes use of Redux, and AWS Amplify for its operability. Other libraries and frameworks utilized:
@@ -250,10 +250,10 @@ The application has been developed using React and makes use of Redux, and AWS A
 - react-bootstrap
 - react-router
 - react-thunk
-- uuid
+- UUID
 
 
-The application utilizes the API Gateway as its RESTFul back-end in order to fullfil its requests, there are five lambda functions provided to serve as the back-end for the application. The lambda functions provided:
+The application utilizes the API Gateway as its RESTFul backend to fulfill its requests, there are five lambda functions provided to serve as the backend for the application. The lambda functions provided:
 
 ### ListApartments
 
@@ -279,7 +279,7 @@ Lambda function that retrieves the lists all the apartments registered in the sy
 
 ### CreateApartments
 
-Lambda function that creates a set of apartments for a floor (8 apartments per floor), assigns an UUIDv4 as key, saves it in the database, then returns the newly create apartments
+Lambda function that creates a set of apartments for a floor (8 apartments per floor), assigns an UUIDv4 as key, saves it in the database, then returns the newly created apartments
 
 ``` 
   POST /apartments
@@ -304,7 +304,7 @@ Lambda function that creates a set of apartments for a floor (8 apartments per f
 
 ### UpdateApartments
 
-Lambda function that updates a batch of apartments, if the apartments does not contain a keys, then function will asign an UUID v4 and save it in the database.
+Lambda function that updates a batch of apartments, if the apartments do not contain a key, then the function will assign a UUID v4 and save it in the database.
 
 ``` 
   PUT /apartments
@@ -337,7 +337,7 @@ Lambda function that updates a batch of apartments, if the apartments does not c
 
 ### DeleteApartments
 
-Lambda function that updates a batch of apartments, if the apartments does not contain a keys, then function will asign an UUID v4 and save it in the database.
+Lambda function that deletes a set of apartments from the database.
 
 ``` 
   DELETE /apartments
@@ -366,7 +366,7 @@ Lambda function that updates a batch of apartments, if the apartments does not c
 
 This lambda function will react to the DynamoDB Stream for new modifications of the current state, then send a request to the Influxdb API to store the modification.
 
-An example dashboard is provided in order to demostrate how this data can be exploited using the features of Influxdb 2.0 (please note this just a demostration purpose, therefore some limitations apply).
+An example dashboard is provided to demonstrate how this data can be exploited using the features of Influxdb 2.0 (please note this just a demonstration purpose, therefore some limitations apply).
 
 &nbsp;
 
@@ -392,11 +392,11 @@ Creating this AWS Stack will create and consume AWS resources which will **cost 
 <a name="parameters"></a>
 ### Parameters
 
-**ProjectName**: Used as a prefix for project resources. Can be up to 12 characters, lowercase letters (a-z) only.
+**ProjectName**: Used as a prefix for project resources. It can be up to 12 characters, lowercase letters (a-z) only.
 
-**AdminUserEmail**: E-mail of an initial account to be created in Cognito, and e-mail with a temporary password will be sent to this e-mail address once the stack is deployed.
+**AdminUserEmail**: E-mail of an initial account to be created in Cognito, an e-mail with a temporary password will be sent to this e-mail address once the stack is deployed.
     
-**GitHubOAuthToken**: GitHub Token with Read access to the repository containing the project, to find out how to obtain such token, visit [ GitHub Access Token Page ](https://github.com/settings/tokens) 
+**GitHubOAuthToken**: GitHub Token with reading access to the repository containing the project, to find out how to obtain such token, visit [ GitHub Access Token Page ](https://github.com/settings/tokens) 
     
 **GitHubOwner**: Username of the owner of the GitHub Access Token.
     
@@ -404,7 +404,7 @@ Creating this AWS Stack will create and consume AWS resources which will **cost 
     
 **GitHubBranch**: The name of the GitHub branch to pull the project from.
     
-**KeyName**: Name of an existing EC2 Keypair to enable SSH access to the Influxdb instances    .
+**KeyName**: Name of an existing EC2 Keypair to enable SSH access to the Influxdb instances.
 
 **PublicSubnets**: The public subnet to which the Influxdb EC2 instance and AutoBalancer will be attached to.
     
@@ -481,9 +481,9 @@ Creating this AWS Stack will create and consume AWS resources which will **cost 
 
 &nbsp;
 
-The stack is here defined as a foundation for rapid deployment of web applications, in which simplicity was the main requirement of it's definition, therefore, in order to take it to production, some adjustment must be made.
+The stack is here defined as a foundation for the rapid deployment of web applications, in which simplicity was the main requirement of its definition, therefore, to take it to production, some adjustments must be made.
 
-- Resource configuration were made to remain as close as possible to the free-tier limitations
+- Resource configuration was made to remain as close as possible to the free-tier limitations
 - Some Roles might be adjusted to provide stronger or precise permissions
 
 &nbsp;
@@ -498,7 +498,7 @@ The stack is here defined as a foundation for rapid deployment of web applicatio
 
 I provide this stack as an example for which other people can build upon.
 
-I'm not responsible for incurring charges or damages which might deploying or utilizing this stack.
+I'm not responsible for incurring charges or damages which might be presented from deploying or utilizing this stack.
 
 &nbsp;
 

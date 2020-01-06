@@ -2,7 +2,7 @@
 
 &nbsp;
 
-The Demo Web Application (BinCity v0.1) represents an abstraction of a global binary state (On/Off) for a set of objects, In the application, this state are represented as apartments within a building.
+The Demo Web Application (BinCity v0.1) represents an abstraction of a global binary state (On/Off) for a set of objects, In the application, this state is represented as apartments within a building.
 
 &nbsp;
 
@@ -20,7 +20,7 @@ The application is an abstraction to different applications:
 
 The application makes use of the Cognito provided by the stack to authorize and sign the user. An authorized user can make changes to the global state.
 
-The application uses a table in DynamoDB to store the current global state, and uses the Influxdb for historical changes to the state.
+The application uses a table in DynamoDB to store the current global state and uses the Influxdb for historical changes to the state.
 
 
 The application has been developed using React and makes use of Redux, and AWS Amplify for its operability. Other libraries and frameworks utilized:
@@ -33,7 +33,7 @@ The application has been developed using React and makes use of Redux, and AWS A
 - uuid
 
 
-The application utilizes the API Gateway as its RESTFul back-end in order to fullfil its requests, there are five lambda functions provided to serve as the back-end for the application. The lambda functions provided:
+The application utilizes the API Gateway as its RESTFul backend to fulfill its requests, there are five lambda functions provided to serve as the back-end for the application. The lambda functions provided:
 
 ### ListApartments
 
@@ -59,7 +59,7 @@ Lambda function that retrieves the lists all the apartments registered in the sy
 
 ### CreateApartments
 
-Lambda function that creates a set of apartments for a floor (8 apartments per floor), assigns an UUIDv4 as key, saves it in the database, then returns the newly create apartments
+Lambda function that creates a set of apartments for a floor (8 apartments per floor), assigns an UUIDv4 as key, saves it in the database, then returns the newly created apartments
 
 ``` 
   POST /apartments
@@ -84,7 +84,7 @@ Lambda function that creates a set of apartments for a floor (8 apartments per f
 
 ### UpdateApartments
 
-Lambda function that updates a batch of apartments, if the apartments does not contain a keys, then function will asign an UUID v4 and save it in the database.
+Lambda function that updates a batch of apartments, if the apartments do not contain a key, then the function will assign a UUID v4 and save it in the database.
 
 ``` 
   PUT /apartments
@@ -117,7 +117,7 @@ Lambda function that updates a batch of apartments, if the apartments does not c
 
 ### DeleteApartments
 
-Lambda function that updates a batch of apartments, if the apartments does not contain a keys, then function will asign an UUID v4 and save it in the database.
+Lambda function that deletes a batch of apartments from the database.
 
 ``` 
   DELETE /apartments
@@ -146,7 +146,7 @@ Lambda function that updates a batch of apartments, if the apartments does not c
 
 This lambda function will react to the DynamoDB Stream for new modifications of the current state, then send a request to the Influxdb API to store the modification.
 
-An example dashboard is provided in order to demostrate how this data can be exploited using the features of Influxdb 2.0 (please note this just a demostration purpose, therefore some limitations apply).
+An example dashboard is provided to demonstrate how this data can be exploited using the features of Influxdb 2.0 (please note this just a demonstration purpose, therefore some limitations apply).
 
 &nbsp;
 
