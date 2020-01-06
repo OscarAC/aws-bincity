@@ -20,23 +20,23 @@
         "data": [
          {
           "type": "cell",
-          "id": "04fdfca92a2f5000"
+          "id": "050afc7911e4f000"
          },
          {
           "type": "cell",
-          "id": "04ffb0cb26ef5000"
+          "id": "050afc7913a4f000"
          },
          {
           "type": "cell",
-          "id": "04ffb302876f5000"
+          "id": "050afc791564f000"
          },
          {
           "type": "cell",
-          "id": "04ffb44e942f5000"
+          "id": "050afc7915a4f000"
          },
          {
           "type": "cell",
-          "id": "04ffb54be62f5000"
+          "id": "050afc7916a4f000"
          }
         ]
        },
@@ -44,15 +44,15 @@
         "data": [
          {
           "type": "variable",
-          "id": "04ffa7716eaf5000"
+          "id": "050afc793ce4f000"
          },
          {
           "type": "variable",
-          "id": "04ffa877252f5000"
+          "id": "050afc793da4f000"
          },
          {
           "type": "variable",
-          "id": "04ffb46eed2f5000"
+          "id": "050afc793e64f000"
          }
         ]
        }
@@ -60,7 +60,7 @@
      },
      "included": [
       {
-       "id": "04fdfca92a2f5000",
+       "id": "050afc7911e4f000",
        "type": "cell",
        "attributes": {
         "x": 2,
@@ -72,13 +72,13 @@
         "view": {
          "data": {
           "type": "view",
-          "id": "04fdfca92a2f5000"
+          "id": "050afc7911e4f000"
          }
         }
        }
       },
       {
-       "id": "04ffb0cb26ef5000",
+       "id": "050afc7913a4f000",
        "type": "cell",
        "attributes": {
         "x": 0,
@@ -90,13 +90,13 @@
         "view": {
          "data": {
           "type": "view",
-          "id": "04ffb0cb26ef5000"
+          "id": "050afc7913a4f000"
          }
         }
        }
       },
       {
-       "id": "04ffb302876f5000",
+       "id": "050afc791564f000",
        "type": "cell",
        "attributes": {
         "x": 0,
@@ -108,13 +108,13 @@
         "view": {
          "data": {
           "type": "view",
-          "id": "04ffb302876f5000"
+          "id": "050afc791564f000"
          }
         }
        }
       },
       {
-       "id": "04ffb44e942f5000",
+       "id": "050afc7915a4f000",
        "type": "cell",
        "attributes": {
         "x": 7,
@@ -126,13 +126,13 @@
         "view": {
          "data": {
           "type": "view",
-          "id": "04ffb44e942f5000"
+          "id": "050afc7915a4f000"
          }
         }
        }
       },
       {
-       "id": "04ffb54be62f5000",
+       "id": "050afc7916a4f000",
        "type": "cell",
        "attributes": {
         "x": 0,
@@ -144,14 +144,14 @@
         "view": {
          "data": {
           "type": "view",
-          "id": "04ffb54be62f5000"
+          "id": "050afc7916a4f000"
          }
         }
        }
       },
       {
        "type": "view",
-       "id": "04fdfca92a2f5000",
+       "id": "050afc7911e4f000",
        "attributes": {
         "name": "Floor History",
         "properties": {
@@ -238,7 +238,7 @@
       },
       {
        "type": "view",
-       "id": "04ffb0cb26ef5000",
+       "id": "050afc7913a4f000",
        "attributes": {
         "name": "Total Events",
         "properties": {
@@ -286,14 +286,14 @@
       },
       {
        "type": "view",
-       "id": "04ffb302876f5000",
+       "id": "050afc791564f000",
        "attributes": {
         "name": "Global",
         "properties": {
          "shape": "chronograf-v2",
          "queries": [
           {
-           "text": "import \"regexp\"\nfrom(bucket: \"BinCity\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._field == \"value\")  \n  |> group(columns: [\"_measurement\"], mode:\"by\")\n  |> aggregateWindow(every: 1s, fn: sum)  \n  |> fill(column: \"_value\", usePrevious: true)",
+           "text": "import \"regexp\"  \nfrom(bucket: \"BinCity\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)  \n  |> filter(fn: (r) => r._value > 0)\n  |> group(columns: [\"_measurement\"], mode:\"by\")\n  |> aggregateWindow(every: 1s, fn: sum)\n  |> fill(column: \"_value\", usePrevious: true)",
            "editMode": "advanced",
            "name": "",
            "builderConfig": {
@@ -373,7 +373,7 @@
       },
       {
        "type": "view",
-       "id": "04ffb44e942f5000",
+       "id": "050afc7915a4f000",
        "attributes": {
         "name": "Apartment History",
         "properties": {
@@ -460,7 +460,7 @@
       },
       {
        "type": "view",
-       "id": "04ffb54be62f5000",
+       "id": "050afc7916a4f000",
        "attributes": {
         "name": "Name this Cell",
         "properties": {
@@ -558,7 +558,7 @@
        }
       },
       {
-       "id": "04ffa7716eaf5000",
+       "id": "050afc793ce4f000",
        "type": "variable",
        "attributes": {
         "name": "building",
@@ -578,7 +578,7 @@
        }
       },
       {
-       "id": "04ffa877252f5000",
+       "id": "050afc793da4f000",
        "type": "variable",
        "attributes": {
         "name": "floor",
@@ -598,7 +598,7 @@
        }
       },
       {
-       "id": "04ffb46eed2f5000",
+       "id": "050afc793e64f000",
        "type": "variable",
        "attributes": {
         "name": "apartment",

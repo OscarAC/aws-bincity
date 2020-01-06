@@ -1,3 +1,158 @@
+## About the Demo Application
+
+&nbsp;
+
+The Demo Web Application (BinCity v0.1) represents an abstraction of a global binary state (On/Off) for a set of objects, In the application, this state are represented as apartments within a building.
+
+&nbsp;
+
+![Bincity-BG](../dgm/bincity-bg.png)
+
+&nbsp;
+
+The application is an abstraction to different applications:
+
+- Clickstream
+- Global Representational State
+- Massive Session Management / Monitoring
+- Internet of Things
+- More ...
+
+The application makes use of the Cognito provided by the stack to authorize and sign the user. An authorized user can make changes to the global state.
+
+The application uses a table in DynamoDB to store the current global state, and uses the Influxdb for historical changes to the state.
+
+
+The application has been developed using React and makes use of Redux, and AWS Amplify for its operability. Other libraries and frameworks utilized:
+
+- react-redux
+- aws-amplify
+- react-bootstrap
+- react-router
+- react-thunk
+- uuid
+
+
+The application utilizes the API Gateway as its RESTFul back-end in order to fullfil its requests, there are five lambda functions provided to serve as the back-end for the application. The lambda functions provided:
+
+### ListApartments
+
+Lambda function that retrieves the lists all the apartments registered in the system.
+
+``` 
+  GET /apartments
+
+  response: {
+    [{
+      key: 'UUID v4'
+      apartment: 0,
+      building: 0,
+      floor: 0,
+      building: 0,
+      value: 1
+    }],
+    ...
+  }
+
+```
+
+
+### CreateApartments
+
+Lambda function that creates a set of apartments for a floor (8 apartments per floor), assigns an UUIDv4 as key, saves it in the database, then returns the newly create apartments
+
+``` 
+  POST /apartments
+
+  request: {          
+      building: 0          
+  }
+
+  response: {
+    [{
+      key: 'UUID v4'
+      apartment: 0,
+      building: 0,
+      floor: 0,
+      building: 0,
+      value: 1
+    }],
+    ...
+  }
+
+```
+
+### UpdateApartments
+
+Lambda function that updates a batch of apartments, if the apartments does not contain a keys, then function will asign an UUID v4 and save it in the database.
+
+``` 
+  PUT /apartments
+
+  request: {
+    [{
+      key: 'UUID v4'
+      apartment: 0,
+      building: 0,
+      floor: 0,
+      building: 0,
+      value: 1
+    }],
+    ...
+  }
+
+  response: {
+    [{
+      key: 'UUID v4'
+      apartment: 0,
+      building: 0,
+      floor: 0,
+      building: 0,
+      value: 1
+    }],
+    ...
+  }
+
+```
+
+### DeleteApartments
+
+Lambda function that updates a batch of apartments, if the apartments does not contain a keys, then function will asign an UUID v4 and save it in the database.
+
+``` 
+  DELETE /apartments
+
+  request: {
+    [{
+      key: 'UUID v4'
+      apartment: 0,
+      building: 0,
+      floor: 0,
+      building: 0,
+      value: 1
+    }],
+    ...
+  }
+
+  response: {    
+      deleted: 8    
+  }
+
+```
+
+&nbsp;
+
+### StreamReactor
+
+This lambda function will react to the DynamoDB Stream for new modifications of the current state, then send a request to the Influxdb API to store the modification.
+
+An example dashboard is provided in order to demostrate how this data can be exploited using the features of Influxdb 2.0 (please note this just a demostration purpose, therefore some limitations apply).
+
+&nbsp;
+
+![Bincity-BG](../dgm/dashboard-example.png)
+
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
@@ -27,42 +182,25 @@ Your app is ready to be deployed!
 
 See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
 
-### `npm run eject`
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+---
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+&nbsp;
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+## Questions or contact
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+&nbsp;
 
-## Learn More
+For questions please leave a comment on GitHub.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+&nbsp;
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+---
 
-### Code Splitting
+&nbsp;
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+## License
 
-### Analyzing the Bundle Size
+[![License](http://img.shields.io/:license-mit-blue.svg?style=flat-square)](http://badges.mit-license.org)
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+- **[MIT license](http://opensource.org/licenses/mit-license.php)**
