@@ -354,40 +354,40 @@ Resources:
       CloudFrontOriginAccessIdentityConfig:
         Comment: !Sub 'OriginAccessIdentity for ${AssetsBucket}'
 
-  # Assets CloudFront Distribution
-  # AssetsCDN:
-  #   Type: 'AWS::CloudFront::Distribution'
-  #   DependsOn:
-  #     - AssetsBucketOriginAccessIdentity
-  #   Properties:
-  #     DistributionConfig:
-  #       Enabled: true
-  #       Comment: !Sub 'CDN for ${AssetsBucket}'
-  #       DefaultRootObject: index.html
-  #       Origins:
-  #         - DomainName: !Join
-  #             - ''
-  #             - - !Sub '${AssetsBucket}.s3'
-  #               - !If [IADRegion, '', !Sub '-${AWS::Region}']
-  #               - '.amazonaws.com'
-  #           Id: S3
-  #           S3OriginConfig:
-  #             OriginAccessIdentity: !Sub >-
-  #               origin-access-identity/cloudfront/${AssetsBucketOriginAccessIdentity}
-  #       DefaultCacheBehavior:
-  #         TargetOriginId: S3
-  #         ViewerProtocolPolicy: https-only
-  #         ForwardedValues:
-  #           QueryString: 'false'
-  #       CustomErrorResponses:
-  #         - ErrorCode: '404'
-  #           ResponsePagePath: '/index.html'
-  #           ResponseCode: '200'
-  #           ErrorCachingMinTTL: '30'
-  #         - ErrorCode: '403'
-  #           ResponsePagePath: '/index.html'
-  #           ResponseCode: '200'
-  #           ErrorCachingMinTTL: '30'
+  Assets CloudFront Distribution
+  AssetsCDN:
+    Type: 'AWS::CloudFront::Distribution'
+    DependsOn:
+      - AssetsBucketOriginAccessIdentity
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub 'CDN for ${AssetsBucket}'
+        DefaultRootObject: index.html
+        Origins:
+          - DomainName: !Join
+              - ''
+              - - !Sub '${AssetsBucket}.s3'
+                - !If [IADRegion, '', !Sub '-${AWS::Region}']
+                - '.amazonaws.com'
+            Id: S3
+            S3OriginConfig:
+              OriginAccessIdentity: !Sub >-
+                origin-access-identity/cloudfront/${AssetsBucketOriginAccessIdentity}
+        DefaultCacheBehavior:
+          TargetOriginId: S3
+          ViewerProtocolPolicy: https-only
+          ForwardedValues:
+            QueryString: 'false'
+        CustomErrorResponses:
+          - ErrorCode: '404'
+            ResponsePagePath: '/index.html'
+            ResponseCode: '200'
+            ErrorCachingMinTTL: '30'
+          - ErrorCode: '403'
+            ResponsePagePath: '/index.html'
+            ResponseCode: '200'
+            ErrorCachingMinTTL: '30'
 
   # Lambda Functions S3 Bucket
   LambdaBucket:
@@ -981,16 +981,16 @@ Resources:
       MetricsConfigurations:
         - Id: TokenBucket
 
-# Outputs:  
-#   WebApplication:
-#     Description: The URL for the web application
-#     Export:
-#       Name: !Sub '${ProjectName}WebApp'
-#     Value: !Sub 
-#       - 'https://${Domain}'
-#       - Domain: !GetAtt AssetsCDN.DomainName
-#   InfluxURL:
-#     Description: URL for the Influx application
-#    Value: !Sub
-#       - 'http://${loadBalancerDNS}'
-#       - loadBalancerDNS: !GetAtt InfluxLoadBalancer.DNSName
+Outputs:  
+  WebApplication:
+    Description: The URL for the web application
+    Export:
+      Name: !Sub '${ProjectName}WebApp'
+    Value: !Sub 
+      - 'https://${Domain}'
+      - Domain: !GetAtt AssetsCDN.DomainName
+  InfluxURL:
+    Description: URL for the Influx application
+   Value: !Sub
+      - 'http://${loadBalancerDNS}'
+      - loadBalancerDNS: !GetAtt InfluxLoadBalancer.DNSName
